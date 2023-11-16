@@ -185,8 +185,7 @@ UserParams Parameters::createUserParams(jParser::jValue jValue) const
 		const std::string methodStr = jValue["method"].as_string();
 		if (methodStr.compare("GAF") == 0) userParams.method = Method::GAF;
 		else if (methodStr.compare("G1") == 0) userParams.method = Method::G1;
-		else if (methodStr.compare("TABULATION") == 0) userParams.method = Method::TABULATION;
-		else if (methodStr.compare("HISTOGRAMS") == 0) userParams.method = Method::HISTOGRAMS;
+		else if (methodStr.compare("D_TABULATION") == 0) userParams.method = Method::D_TABULATION;
 		else if (methodStr.compare("AMBIENT_OCCLUSION") == 0) userParams.method = Method::AMBIENT_OCCLUSION;
 		else if (methodStr.compare("PLOT_DISTRIB") == 0) userParams.method = Method::PLOT_DISTRIB;
 		else if (methodStr.compare("STATISTICS") == 0) userParams.method = Method::STATISTICS;

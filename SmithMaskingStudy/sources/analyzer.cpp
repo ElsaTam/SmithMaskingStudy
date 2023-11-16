@@ -39,20 +39,20 @@ void INFO_PHI(scal phi, int i, size_t nPhi)
 Analyzer::Analyzer(TriangleMesh* _mesh, bool useGPU)
 {
     DIn = {};
-    DIn.phiStart = Parameters::userParams.directionInParams.phiStart;
-    DIn.phiRange = Parameters::userParams.directionInParams.phiEnd - DIn.phiStart;
+    DIn.phiStart   = Parameters::userParams.directionInParams.phiStart;
+    DIn.phiRange   = Parameters::userParams.directionInParams.phiEnd - DIn.phiStart;
     DIn.thetaStart = Parameters::userParams.directionInParams.thetaStart;
     DIn.thetaRange = Parameters::userParams.directionInParams.thetaEnd - DIn.thetaStart;
-    DIn.nPhi = Parameters::userParams.directionInParams.nAzimuthSamples;
-    DIn.nTheta = Parameters::userParams.directionInParams.nElevationSamples;
+    DIn.nPhi       = Parameters::userParams.directionInParams.nAzimuthSamples;
+    DIn.nTheta     = Parameters::userParams.directionInParams.nElevationSamples;
 
     DOut = {};
-    DOut.phiStart = Parameters::userParams.directionOutParams.phiStart;
-    DOut.phiRange = Parameters::userParams.directionOutParams.phiEnd - DOut.phiStart;
+    DOut.phiStart   = Parameters::userParams.directionOutParams.phiStart;
+    DOut.phiRange   = Parameters::userParams.directionOutParams.phiEnd - DOut.phiStart;
     DOut.thetaStart = Parameters::userParams.directionOutParams.thetaStart;
     DOut.thetaRange = Parameters::userParams.directionOutParams.thetaEnd - DOut.thetaStart;
-    DOut.nPhi = Parameters::userParams.directionOutParams.nAzimuthSamples;
-    DOut.nTheta = Parameters::userParams.directionOutParams.nElevationSamples;
+    DOut.nPhi       = Parameters::userParams.directionOutParams.nAzimuthSamples;
+    DOut.nTheta     = Parameters::userParams.directionOutParams.nElevationSamples;
 
     D = DOut;
 
@@ -124,8 +124,16 @@ void Analyzer::logRenderingInfo() const
             + ", thetaEnd=" + std::to_string(Parameters::userParams.directionOutParams.thetaEnd));
         break;
 
+    case Method::D_TABULATION:
+        LOG_MESSAGE("nPhi=" + std::to_string(Discrete::phiSize())
+            + ", phiStart=" + std::to_string(Discrete::phiStart())
+            + ", phiEnd=" + std::to_string(Discrete::phiEnd()));
+        LOG_MESSAGE("nTheta=" + std::to_string(Discrete::thetaSize())
+            + ", thetaStart=" + std::to_string(Discrete::thetaStart())
+            + ", thetaEnd=" + std::to_string(Discrete::thetaEnd()));
+        break;
+
     case Method::GAF:
-    case Method::TABULATION:
     case Method::STATISTICS:
         LOG_MESSAGE("IN_nPhi=" + std::to_string(Parameters::userParams.directionInParams.nAzimuthSamples)
             + ", IN_phiStart=" + std::to_string(Parameters::userParams.directionInParams.phiStart)
@@ -157,20 +165,6 @@ void Analyzer::logRenderingInfo() const
 // ----------------------------      UTILS      ---------------------------- //
 // ------------------------------------------------------------------------- //
 
-scal Analyzer::dSmooth(int N, int i) const
-{
-    if (N <= 1) return 0.5;
-    float m = 1;
-    float a = 0.5 / (atan(m * (scal)(N - 1) * 0.5));
-    float y = a * atan(m * ((scal)i - (scal)(N - 1) * 0.5)) + 0.5;
-    return y;
-}
-
-scal Analyzer::dLinear(int N, int i) const
-{
-    if (N <= 1) return 0.f;
-    return (scal)i / (scal)(N - 1);
-}
 
 std::unique_ptr<MicrofacetDistribution> Analyzer::getTheoricalNDF() const
 {
@@ -521,7 +515,7 @@ void Analyzer::tabulateFunctions(std::vector<std::string> filenames, std::vector
 }
 
 
-void Analyzer::tabulate(bool D, bool G1_Ashikhmin, bool G1_RT, Discrete* NDF)
+void Analyzer::tabulate(bool D, bool G1_Ashikhmin, bool G1_RT)
 {
     ENTER
     if (G1_RT) {
@@ -531,7 +525,8 @@ void Analyzer::tabulate(bool D, bool G1_Ashikhmin, bool G1_RT, Discrete* NDF)
         optixRenderer->setLaunchParams(params);
     }
 
-    if (!NDF && (D || G1_Ashikhmin)) NDF = new Discrete(*mesh);
+    // Create the discrete NDF
+    Discrete* NDF = (D || G1_Ashikhmin) ? new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage) : nullptr;
 
     std::vector<std::string> filenames;
     std::vector<scal(*)(void*, scal, scal, scal, scal)> functions;
@@ -557,14 +552,14 @@ void Analyzer::tabulate(bool D, bool G1_Ashikhmin, bool G1_RT, Discrete* NDF)
     EXIT
 }
 
-void Analyzer::tabulateDistrib(Discrete* NDF)
+void Analyzer::tabulateDistrib()
 {
-    tabulate(true, false, false, NDF);
+    tabulate(true, false, false);
 }
 
-void Analyzer::tabulateG1_Ashikhmin(Discrete* NDF)
+void Analyzer::tabulateG1_Ashikhmin()
 {
-    tabulate(false, true, false, NDF);
+    tabulate(false, true, false);
 }
 
 void Analyzer::tabulateG1_RT()
@@ -603,62 +598,6 @@ void Analyzer::tabulateGAF_RT()
 }
 
 
-void Analyzer::tabulateHeights()
-{
-    ENTER
-
-    // Create the height NDF
-    Console::out << Console::timeStamp << "Analyzer computing Histograms..." << std::endl;
-    std::unique_ptr<HeightsDiscrete> hdf(new HeightsDiscrete(*mesh, Parameters::userParams.sideEffectParams.borderPercentage));
-
-    // Create CSV writers
-    csv::CSVWriter* writer = new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_H.csv");
-
-    // Write first row (theta)
-    writeTheta(*writer);
-
-    // Prepare iteration values
-    const scal phiStart = Discrete::phiStart(), phiEnd = Discrete::phiEnd();
-    const scal thetaStart = Discrete::thetaStart(), thetaEnd = Discrete::thetaEnd();
-    const size_t nPhi = Discrete::phiSize(), nTheta = Discrete::thetaSize();
-    const scal phiStep = (phiEnd - phiStart) / (scal)nPhi;
-    const scal thetaStep = (thetaEnd - thetaStart) / (scal)nTheta;
-
-    // Start double loop
-
-    for (int i = 0; i < nPhi; ++i) {
-        scal phi = phiStart + i * phiStep; // [ -pi, ..., ..., ... ], pi
-
-        // One vector for each row
-        std::vector<csv::elem> vector_h;
-
-        // Push back the first value: phi (at the start of the cell)
-        vector_h.push_back({ csv::elem::Tag::SCAL, phi });
-
-        // Move phi at the center of the cell
-        phi += 0.5 * phiStep; // [ -pi+d, ...+d, ...+d, ...+d ], pi+d
-
-        for (int j = 0; j < nTheta; ++j) {
-            scal theta = thetaStart + j * thetaStep + 0.5 * thetaStep; // [0+d, ...+d, ...+d, ...+d ], pi/2+d
-            vector_h.push_back({ csv::elem::Tag::SCAL_ARR, hdf->hist(Conversion::polar_to_cartesian(theta, phi)) });
-        }
-
-        // Write rows
-        writer->writeRow(vector_h);
-
-        if (Parameters::userParams.outLevel >= OutLevel::INFO) {
-            Console::light << Console::timePad << Console::indent;
-            Console::light << "(" << std::setfill(' ') << std::setw(std::to_string(nPhi).length()) << i << " / " << nPhi << ") ";
-            Console::light << "     ###     phi = " << std::to_string(phi) << std::endl;
-        }
-    }
-
-    writer->close();
-    delete writer;
-
-    EXIT
-}
-
 
 // ------------------------------------------------------------------------- //
 // ---------------------      AMBIENT OCCLUSION      ----------------------- //
@@ -668,7 +607,7 @@ void Analyzer::ambientOcclusion()
 {
     GPU_ENTER
 
-        optixRenderer->render(getFolder("ambient_occlusion/") + mesh->name + ".png");
+    optixRenderer->render(getFolder("ambient_occlusion/") + mesh->name + ".png");
 
     EXIT
 }

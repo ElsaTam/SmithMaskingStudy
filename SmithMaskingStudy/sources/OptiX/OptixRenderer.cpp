@@ -108,25 +108,6 @@ void OptixRenderer::setUserParams()
     case Method::AMBIENT_OCCLUSION:
         launchParams.camera.programType = ProgramType::AMBIENT_OCCLUSION;
         break;
-    case Method::TABULATION:
-        if (Parameters::userParams.outLevel >= OutLevel::TRACE) {
-            //Console::out << "userParams.method == Method::TABULATION. The programType is set to ";
-            switch (launchParams.camera.programType) {
-            case ProgramType::G1:
-                //Console::out << "ProgramType::G1" << std::endl;
-                break;
-            case ProgramType::GAF:
-                //Console::out << "ProgramType::GAF" << std::endl;
-                break;
-            case ProgramType::AMBIENT_OCCLUSION:
-                //Console::out << "ProgramType::AMBIENT_OCCLUSION" << std::endl;
-                break;
-            default:
-                //Console::warn << "unknown" << std::endl;
-                break;
-            }
-        }
-        break;
     default:
         break;
     }

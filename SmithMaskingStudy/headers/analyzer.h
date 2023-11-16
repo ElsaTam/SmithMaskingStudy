@@ -32,10 +32,11 @@ private:
 	void logRenderingInfo() const;
 
 	// utils
-	scal dSmooth(int N, int i) const;
-	scal dLinear(int N, int i) const;
 	std::unique_ptr<MicrofacetDistribution> getTheoricalNDF() const;
 	std::string getFolder(const std::string& root) const;
+
+	// tabulation
+	void tabulateFunctions(std::vector<std::string> filenames, std::vector<scal(*)(void*, scal, scal, scal, scal)> T_functions, std::vector<void*> contexts, scal phiIn = 0, scal thetaIn = 0);
 
 public:
 
@@ -58,14 +59,11 @@ public:
 
 	// Tabulation
 	void writeTheta(csv::CSVWriter& writer, bool fromDistrib = false) const;
-	void tabulateFunctions(std::vector<std::string> filenames, std::vector<scal (*)(void*, scal, scal, scal, scal)> T_functions, std::vector<void*> contexts, scal phiIn = 0, scal thetaIn = 0);
-	void tabulate(bool D, bool G1_Ashikhmin, bool G1_RT, Discrete* NDF = nullptr);
-	void tabulateDistrib(Discrete* NDF = nullptr);
-	void tabulateG1_Ashikhmin(Discrete* NDF = nullptr);
+	void tabulate(bool D, bool G1_Ashikhmin, bool G1_RT);
+	void tabulateDistrib();
+	void tabulateG1_Ashikhmin();
 	void tabulateG1_RT();
 	void tabulateGAF_RT();
-	// Heights histograms
-	void tabulateHeights();
 
 	// Ambient occlusion
 	void ambientOcclusion();

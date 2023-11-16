@@ -7,8 +7,7 @@
 enum class Method {
     G1,
     GAF,
-    TABULATION,
-    HISTOGRAMS,
+    D_TABULATION,
     AMBIENT_OCCLUSION,
     PLOT_DISTRIB,
     STATISTICS,

@@ -105,20 +105,8 @@ void run(const UserParams& params) {
             case Method::GAF:
                 analyzer.GAF();
                 break;
-            case Method::TABULATION:
-            {
-                bool D = true;
-                bool G1_Ashikhmin = true;
-                bool G1_RT = true;
-                bool GAF = false;
-                Discrete* NDF = G1_Ashikhmin ? new Discrete(*mesh, nullptr, 0) : nullptr;
-                if (D || G1_Ashikhmin || G1_RT) analyzer.tabulate(D, G1_Ashikhmin, G1_RT, NDF);
-                if (NDF) delete NDF;
-                if (GAF) analyzer.tabulateGAF_RT();
-                break;
-            }
-            case Method::HISTOGRAMS:
-                analyzer.tabulateHeights();
+            case Method::D_TABULATION:
+                analyzer.tabulateDistrib();
                 break;
             case Method::AMBIENT_OCCLUSION:
                 analyzer.ambientOcclusion();
