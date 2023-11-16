@@ -105,9 +105,6 @@ void run(const UserParams& params) {
             case Method::G1:
                 analyzer.G1();
                 break;
-            case Method::ASHIKHMIN_DIFF_3D:
-                analyzer.ashikhminDiff_3D();
-                break;
             case Method::GAF_2D:
                 analyzer.GAF_2D();
                 break;

@@ -128,7 +128,6 @@ void Analyzer::logRenderingInfo() const
     case Method::GAF_2D:
     case Method::GAF_3D:
     case Method::TABULATION:
-    case Method::ASHIKHMIN_DIFF_3D:
     case Method::STATISTICS:
         LOG_MESSAGE("IN_nPhi=" + std::to_string(Parameters::userParams.directionInParams.nAzimuthSamples)
             + ", IN_phiStart=" + std::to_string(Parameters::userParams.directionInParams.phiStart)
@@ -258,8 +257,8 @@ void Analyzer::G1()
     writeTheta(*writer_rc, false);
     writeTheta(*writer_smith, false);
 
-    std::vector<std::vector<gdt::vec3sc>> pts_rc(D.nPhi), pts_smith(D.nPhi);
-    std::vector<gdt::vec3sc> col_rc, col_smith;
+    std::vector<std::vector<gdt::vec3sc>> pts_rc(D.nPhi), pts_smith(D.nPhi), pts_diff(D.nPhi);
+    std::vector<gdt::vec3sc> col_rc, col_smith, col_diff;
 
     for (int i = 0; i < D.nPhi; ++i) {
         Vec_Sc pts_theta, pts_G1_rc, pts_G1_smith;
@@ -286,6 +285,8 @@ void Analyzer::G1()
             col_rc.push_back(Conversion::polar_to_colormap(theta, phi, G1_rc));
             pts_smith[i].push_back(Conversion::polar_to_cartesian(theta, phi, G1_smith));
             col_smith.push_back(Conversion::polar_to_colormap(theta, phi, G1_smith));
+            pts_diff[i].push_back(Conversion::polar_to_cartesian(theta, phi, G1_rc - G1_smith));
+            col_diff.push_back(Conversion::polar_to_colormap(theta, phi, G1_rc - G1_smith));
             // for 2D plots
             pts_theta.push_back(theta);
             pts_G1_rc.push_back(G1_rc);
@@ -309,45 +310,12 @@ void Analyzer::G1()
     delete writer_smith;
 
     // Plot 3D graph
-    PlotsGrapher::splot(getFolder("G1/3D/") + mesh->name + "_RC.png", pts_rc);
-    PlotsGrapher::cmplot(getFolder("G1/3D/") + mesh->name + "_RC_colormap.png", col_rc);
-    PlotsGrapher::splot(getFolder("G1/3D/") + mesh->name + "_Smith.png", pts_smith);
-    PlotsGrapher::cmplot(getFolder("G1/3D/") + mesh->name + "_Smith_colormap.png", col_smith);
-
-    EXIT
-}
-
-void Analyzer::ashikhminDiff_3D()
-{
-    GPU_ENTER
-        std::string folder = getFolder("G1/Ashikhmin_3D/");
-
-    std::vector<std::vector<gdt::vec3sc>> pts(D.nPhi);
-    std::vector<std::vector<gdt::vec3sc>> diff(D.nPhi);
-    std::vector<gdt::vec3sc> col;
-
-    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
-
-    for (int i = 0; i < D.nPhi; ++i) {
-        pts[i].resize(D.nTheta);
-        diff[i].resize(D.nTheta);
-        scal phi = D.phiStart + dLinear(D.nPhi, i) * D.phiRange;
-        INFO_PHI(phi, i, D.nPhi);
-
-        for (int j = 0; j < D.nTheta; ++j) {
-            scal theta = D.thetaStart + dLinear(D.nTheta, j) * D.thetaRange;
-
-            scal measured = optixRenderer->G1(phi, theta);
-            scal computed = discrete_ndf->G1(Conversion::polar_to_cartesian(theta, phi), { });
-            pts[i][j] = Conversion::polar_to_cartesian(theta, phi, computed);
-            diff[i][j] = Conversion::polar_to_cartesian(theta, phi, abs(measured - computed));
-            col.push_back(Conversion::polar_to_colormap(theta, phi, abs(measured - computed)));
-        }
-    }
-
-    PlotsGrapher::splot(folder + mesh->name + "_ashikhmin.png", pts);
-    PlotsGrapher::splotDiff(folder + mesh->name + "_ashikhmin_diff", diff);
-    PlotsGrapher::cmplotDiff(folder + mesh->name + "_ashikhmin_colormap.png", col, "magma");
+    PlotsGrapher::splot     (getFolder("G1/3D/") + mesh->name + "_RC.png" ,                pts_rc);
+    PlotsGrapher::cmplot    (getFolder("G1/3D/") + mesh->name + "_RC_colormap.png",        col_rc);
+    PlotsGrapher::splot     (getFolder("G1/3D/") + mesh->name + "_Smith.png",              pts_smith);
+    PlotsGrapher::cmplot    (getFolder("G1/3D/") + mesh->name + "_Smith_colormap.png",     col_smith);
+    PlotsGrapher::splotDiff (getFolder("G1/3D/") + mesh->name + "_ashikhmin_diff",         pts_diff);
+    PlotsGrapher::cmplotDiff(getFolder("G1/3D/") + mesh->name + "_ashikhmin_colormap.png", col_diff, "magma");
 
     EXIT
 }

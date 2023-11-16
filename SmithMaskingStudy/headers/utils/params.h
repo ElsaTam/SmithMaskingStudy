@@ -6,7 +6,6 @@
 // choice of method
 enum class Method {
     G1,
-    ASHIKHMIN_DIFF_3D,
     COMPARE_EDB,
     COMPARE_SAMPLES,
     GAF_2D,

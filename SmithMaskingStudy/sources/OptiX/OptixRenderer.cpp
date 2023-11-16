@@ -105,7 +105,6 @@ void OptixRenderer::setUserParams()
     case Method::G1:
     case Method::COMPARE_EDB:
     case Method::COMPARE_SAMPLES:
-    case Method::ASHIKHMIN_DIFF_3D:
     case Method::GENERATE_MICROFLAKES:
     case Method::STATISTICS:
     case Method::FULL_PIPELINE:

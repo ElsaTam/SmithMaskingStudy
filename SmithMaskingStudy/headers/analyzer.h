@@ -50,7 +50,6 @@ public:
 	 * 
 	 */
 	void G1();
-	void ashikhminDiff_3D();
 
 	// GAF
 	void GAF_2D();
