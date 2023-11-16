@@ -125,8 +125,7 @@ void Analyzer::logRenderingInfo() const
             + ", thetaEnd=" + std::to_string(Parameters::userParams.directionOutParams.thetaEnd));
         break;
 
-    case Method::GAF_2D:
-    case Method::GAF_3D:
+    case Method::GAF:
     case Method::TABULATION:
     case Method::STATISTICS:
         LOG_MESSAGE("IN_nPhi=" + std::to_string(Parameters::userParams.directionInParams.nAzimuthSamples)
@@ -261,9 +260,11 @@ void Analyzer::G1()
     std::vector<gdt::vec3sc> col_rc, col_smith, col_diff;
 
     for (int i = 0; i < D.nPhi; ++i) {
-        Vec_Sc pts_theta, pts_G1_rc, pts_G1_smith;
         scal phi = D.phiStart + i * D.phiRange / (scal)D.nPhi; // [ -pi, ..., ..., ... ], pi
         INFO_PHI(phi, i, D.nPhi);
+
+        // Vectors for the 2D plots
+        Vec_Sc pts_theta, pts_G1_rc, pts_G1_smith;
 
         // One vector for each row
         std::vector<csv::elem> vector_g1_rc;
@@ -291,6 +292,7 @@ void Analyzer::G1()
             pts_theta.push_back(theta);
             pts_G1_rc.push_back(G1_rc);
             pts_G1_smith.push_back(G1_smith);
+            // for csv files
             vector_g1_smith.push_back({ csv::elem::Tag::SCAL, G1_smith });
             vector_g1_rc.push_back({ csv::elem::Tag::SCAL, G1_rc });
         }
@@ -325,72 +327,97 @@ void Analyzer::G1()
 // -----------------------------      GAF      ----------------------------- //
 // ------------------------------------------------------------------------- //
 
-void Analyzer::GAF_2D()
+void Analyzer::GAF()
 {
     GPU_ENTER
-        std::string folder = getFolder("GAF/2D/");
+
+    // Create the discrete NDF
+    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
+
 
     for (int i1 = 0; i1 < DIn.nPhi; ++i1) {
-        scal phiIn = DIn.phiStart + dLinear(DIn.nPhi, i1) * DIn.phiRange;
+        scal phiIn = DIn.phiStart + i1 * DIn.phiRange / (scal)DIn.nPhi;
 
         for (int j1 = 0; j1 < DIn.nTheta; ++j1) {
-            scal thetaIn = DIn.thetaStart + dSmooth(DIn.nTheta, j1) * DIn.thetaRange;
-            std::string folderDir = folder + "phi_" + std::to_string(phiIn) + "_theta_" + std::to_string(thetaIn) + "/";
-            CreateDirectoryA(folderDir.c_str(), NULL);
+            scal thetaIn = DIn.thetaStart + j1 * DIn.thetaRange / (scal)DIn.nTheta;
+
+            // Init csv writer to store results
+            csv::CSVWriter* writer_rc = new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_G1-rc.csv");
+            csv::CSVWriter* writer_smith = new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_G1-smith.csv");
+            // Write first row (theta)
+            writeTheta(*writer_rc, false);
+            writeTheta(*writer_smith, false);
+
+            std::vector<std::vector<gdt::vec3sc>> pts_rc(D.nPhi), pts_smith(D.nPhi), pts_diff(D.nPhi);
+            std::vector<gdt::vec3sc> col_rc, col_smith, col_diff;
 
             // first loop for the outgoing direction an ingoing direction is already set
             for (int i2 = 0; i2 < DOut.nPhi; ++i2) {
-                Vec_Sc pts_theta, pts_V;
-                scal phiOut = DOut.phiStart + dLinear(DOut.nPhi, i2) * DOut.phiRange;
+                scal phiOut = DOut.phiStart + i2 * DOut.phiRange / (scal)DOut.nPhi; // [ -pi, ..., ..., ... ], pi
                 INFO_PHI(phiOut, i2, DOut.nPhi);
+
+                // Vectors for the 2D plots
+                Vec_Sc pts_theta, pts_G1_rc, pts_G1_smith;
+
+                // One vector for each row
+                std::vector<csv::elem> vector_g1_rc;
+                std::vector<csv::elem> vector_g1_smith;
+                // Push back the first value: phi (at the start of the cell)
+                vector_g1_rc.push_back({ csv::elem::Tag::SCAL, phiOut });
+                vector_g1_smith.push_back({ csv::elem::Tag::SCAL, phiOut });
+
+                // Move phi at the center of the cell
+                phiOut = DOut.phiStart + (i2 + 0.5f) * DOut.phiRange / (scal)DOut.nPhi; // [ -pi+d, ...+d, ...+d, ...+d ], pi+d
 
                 // last loop : compute the gaf
                 for (int j2 = 0; j2 < DOut.nTheta; ++j2) {
-                    scal thetaOut = DOut.thetaStart + dSmooth(DOut.nTheta, j2) * DOut.thetaRange;
+                    scal thetaOut = DOut.thetaStart + (j2 + 0.5f) * DOut.thetaRange / (scal)DOut.nTheta;
+                    // Compute raytracing (reference) and theoretical (Smith) masking
+                    scal GAF_rc = optixRenderer->GAF(phiIn, thetaIn, phiOut, thetaOut);
+                    scal G1_i_smith = discrete_ndf->G1(Conversion::polar_to_cartesian(thetaIn, phiIn), { 0, 0, 1 });
+                    scal G1_o_smith = discrete_ndf->G1(Conversion::polar_to_cartesian(thetaOut, phiOut), { 0, 0, 1 });
+                    scal GAF_smith = G1_i_smith * G1_o_smith;
+                    // for final 3D plot
+                    pts_rc[i2].push_back(Conversion::polar_to_cartesian(thetaOut, phiOut, GAF_rc));
+                    col_rc.push_back(Conversion::polar_to_colormap(thetaOut, phiOut, GAF_rc));
+                    pts_smith[i2].push_back(Conversion::polar_to_cartesian(thetaOut, phiOut, GAF_smith));
+                    col_smith.push_back(Conversion::polar_to_colormap(thetaOut, phiOut, GAF_smith));
+                    pts_diff[i2].push_back(Conversion::polar_to_cartesian(thetaOut, phiOut, GAF_rc - GAF_smith));
+                    col_diff.push_back(Conversion::polar_to_colormap(thetaOut, phiOut, GAF_rc - GAF_smith));
+                    // for 2D plots
                     pts_theta.push_back(thetaOut);
-                    pts_V.push_back(optixRenderer->GAF(phiIn, thetaIn, phiOut, thetaOut));
+                    pts_G1_rc.push_back(GAF_rc);
+                    pts_G1_smith.push_back(GAF_smith);
+                    // for csv files
+                    vector_g1_smith.push_back({ csv::elem::Tag::SCAL, GAF_smith });
+                    vector_g1_rc.push_back({ csv::elem::Tag::SCAL, GAF_rc });
                 }
+
+                // Write rows
+                writer_rc->writeRow(vector_g1_rc);
+                writer_smith->writeRow(vector_g1_smith);
 
                 // plot a graph for an ingoing direction, an outgoing phi and N outgoing theta
-                PlotsGrapher::plot(folderDir + mesh->name + "_" + std::to_string(phiOut) + ".png", pts_theta, { pts_V }, { });
+                std::string folderDir = getFolder("GAF/2D/") + "phi_" + std::to_string(phiIn) + "_theta_" + std::to_string(thetaIn) + "/";
+                CreateDirectoryA(folderDir.c_str(), NULL);
+                PlotsGrapher::plot(folderDir + mesh->name + "_" + std::to_string(phiOut) + ".png", pts_theta, { pts_G1_rc, pts_G1_smith }, { });
             }
-        }
-    }
 
-    EXIT
-}
+            // Close csv writers
+            writer_rc->close();
+            writer_smith->close();
+            delete writer_rc;
+            delete writer_smith;
 
-void Analyzer::GAF_3D()
-{
-    GPU_ENTER
-        std::string folder = getFolder("GAF/3D/");
-
-    for (int i1 = 0; i1 < DIn.nPhi; ++i1) {
-        scal phiIn = DIn.phiStart + dLinear(DIn.nPhi, i1) * DIn.phiRange;
-
-        for (int j1 = 0; j1 < DIn.nTheta; ++j1) {
-            scal thetaIn = DIn.thetaStart + dSmooth(DIn.nTheta, j1) * DIn.thetaRange;
-            std::string folderDir = folder + "phi_" + std::to_string(phiIn) + "_theta_" + std::to_string(thetaIn) + "/";
+            // Plot 3D graph
+            std::string folderDir = getFolder("GAF/3D/") + "phi_" + std::to_string(phiIn) + "_theta_" + std::to_string(thetaIn) + "/";
             CreateDirectoryA(folderDir.c_str(), NULL);
-
-            std::vector<std::vector<gdt::vec3sc>> pts(DOut.nPhi);
-            std::vector<gdt::vec3sc> col;
-            for (int i2 = 0; i2 < DOut.nPhi; ++i2) {
-                scal phiOut = DOut.phiStart + dLinear(DOut.nPhi, i2) * DOut.phiRange;
-                INFO_PHI(phiOut, i2, DOut.nPhi);
-                pts[i2].resize(DOut.nTheta);
-
-                // last loop : compute the gaf
-                for (int j2 = 0; j2 < DOut.nTheta; ++j2) {
-                    scal thetaOut = DOut.thetaStart + dSmooth(DOut.nTheta, j2) * DOut.thetaRange;
-                    scal r = optixRenderer->GAF(phiIn, thetaIn, phiOut, thetaOut);
-                    pts[i2][j2] = Conversion::polar_to_cartesian(thetaOut, phiOut, r);
-                    col.push_back(Conversion::polar_to_colormap(thetaOut, phiOut, r));
-                }
-            }
-
-            PlotsGrapher::splot(folderDir + mesh->name + ".png", pts);
-            PlotsGrapher::cmplot(folderDir + mesh->name + "_colormap.png", col);
+            PlotsGrapher::splot     (folderDir + mesh->name + "_RC.png",                 pts_rc);
+            PlotsGrapher::cmplot    (folderDir + mesh->name + "_RC_colormap.png",        col_rc);
+            PlotsGrapher::splot     (folderDir + mesh->name + "_Smith.png",              pts_smith);
+            PlotsGrapher::cmplot    (folderDir + mesh->name + "_Smith_colormap.png",     col_smith);
+            PlotsGrapher::splotDiff (folderDir + mesh->name + "_ashikhmin_diff",         pts_diff);
+            PlotsGrapher::cmplotDiff(folderDir + mesh->name + "_ashikhmin_colormap.png", col_diff, "magma");
         }
     }
 

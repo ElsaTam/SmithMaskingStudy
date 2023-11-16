@@ -111,8 +111,7 @@ void OptixRenderer::setUserParams()
     case Method::BENCHMARK:
         launchParams.camera.programType = ProgramType::G1;
         break;
-    case Method::GAF_2D:
-    case Method::GAF_3D:
+    case Method::GAF:
         launchParams.camera.programType = ProgramType::GAF;
         break;
     case Method::AMBIENT_OCCLUSION:

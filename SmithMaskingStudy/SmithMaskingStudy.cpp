@@ -76,8 +76,7 @@ void cleanDirectory(const std::string& path)
 void run(const UserParams& params) {
 
     bool useGPU = (params.method == Method::G1)
-        || (params.method == Method::GAF_2D)
-        || (params.method == Method::GAF_3D)
+        || (params.method == Method::GAF)
         //|| (params.method == Method::TABULATION)
         //|| (params.method == Method::STATISTICS)
         || (params.method == Method::COMPARE_EDB)
@@ -105,11 +104,8 @@ void run(const UserParams& params) {
             case Method::G1:
                 analyzer.G1();
                 break;
-            case Method::GAF_2D:
-                analyzer.GAF_2D();
-                break;
-            case Method::GAF_3D:
-                analyzer.GAF_3D();
+            case Method::GAF:
+                analyzer.GAF();
                 break;
             case Method::TABULATION:
             {

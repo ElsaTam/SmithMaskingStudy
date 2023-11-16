@@ -52,8 +52,7 @@ public:
 	void G1();
 
 	// GAF
-	void GAF_2D();
-	void GAF_3D();
+	void GAF();
 
 	// Tabulation
 	void writeTheta(csv::CSVWriter& writer, bool fromDistrib = false) const;

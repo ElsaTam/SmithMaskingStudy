@@ -183,8 +183,7 @@ UserParams Parameters::createUserParams(jParser::jValue jValue) const
 	// Method
 	if (jValue.contains("method")) {
 		const std::string methodStr = jValue["method"].as_string();
-		if (methodStr.compare("GAF_2D") == 0) userParams.method = Method::GAF_2D;
-		else if (methodStr.compare("GAF_3D") == 0) userParams.method = Method::GAF_3D;
+		if (methodStr.compare("GAF") == 0) userParams.method = Method::GAF;
 		else if (methodStr.compare("G1") == 0) userParams.method = Method::G1;
 		else if (methodStr.compare("TABULATION") == 0) userParams.method = Method::TABULATION;
 		else if (methodStr.compare("HISTOGRAMS") == 0) userParams.method = Method::HISTOGRAMS;
