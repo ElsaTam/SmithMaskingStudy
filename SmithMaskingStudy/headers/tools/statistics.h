@@ -5,19 +5,6 @@
 #include "tools/csvWriter.h"
 #include "shapes/TriangleMesh.h"
 
-typedef long double ld;
-typedef gdt::vec_t<ld, 2> vec2_ld;
-typedef gdt::vec_t<ld, 3> vec3_ld;
-typedef gdt::box_t<vec2_ld> box2_ld;
-
-struct ErrorStats
-{
-    ld integral = 0;
-    ld mean = 0;
-    ld std = 0;
-    ld max = 0;
-    ld min = 1;
-};
 
 /**
  * @brief Class used to compute and store statistics of datas.
@@ -25,58 +12,52 @@ struct ErrorStats
  */
 class StatisticsTool
 {
+    csv::elem::Tag DECIMAL_TAG = csv::elem::Tag::LONG_DOUBLE;
+    typedef long double ld;
+    typedef gdt::vec_t<ld, 2> vec2_ld;
+    typedef gdt::vec_t<ld, 3> vec3_ld;
+    typedef gdt::box_t<vec2_ld> box2_ld;
+
 private:
     friend std::ostream& operator<<(std::ostream& output, const StatisticsTool& stats);
     const TriangleMesh* mesh;
 
     // error
-    ErrorStats m_Error{ };
+    scal m_error{ 0 };
 
-    // scores
-    gdt::vec2i m_heightSums{ 0 };
-    ld m_slopeScore{ 0 };
-    ld m_anisotropyScore{ 0 };
-
-    // normal cartesian coordinates
-    vec3_ld m_nXYZMean{ 0 };
-    vec3_ld m_nXYZStd{ 0 };
-    box2_ld m_nXYRanges;
-    ld m_nXYCorr{ 0 };
-
-    // normal spherical coordinates
-    vec2_ld m_nTPMean{ 0 };
-    vec2_ld m_nTPStd{ 0 };
-    box2_ld m_nTPRanges;
-    ld m_nTPCorr{ 0 };
+    // phi
+    ld m_phiAnisotropy{ 0 };
 
     // thetas
-    ld m_TCV{ 0 };     // Coefficient of Variation (or Relative Standard Deviation)
-    ld m_TMAD{ 0 };    // Median Absolute Deviation
-    ld m_TQ1{ 0 };     // First quartile (25%)
-    ld m_TMedian{ 0 }; // Second quartile (50%)
-    ld m_TQ3{ 0 };     // Third quartile (75%)
-    ld m_TIQR{ 0 };    // Interquartile range
-    ld m_TQCD{ 0 };    // Quartile coefficient of dispersion
-
-    // slopes
-    vec2_ld m_slopeMean{ 0 };
-    vec2_ld m_slopeStd{ 0 };
-    box2_ld m_slopeRanges;
-    ld m_slopeCorr{ 0 };
+    ld m_thetaMean{ 0 };
+    ld m_thetaStd{ 0 };
+    gdt::interval<ld> m_thetaRange;
+    ld m_thetaCV{ 0 };     // Coefficient of Variation (or Relative Standard Deviation)
+    ld m_thetaMAD{ 0 };    // Median Absolute Deviation
+    ld m_thetaQ1{ 0 };     // First quartile (25%)
+    ld m_thetaMedian{ 0 }; // Second quartile (50%)
+    ld m_thetaQ3{ 0 };     // Third quartile (75%)
+    ld m_thetaIQR{ 0 };    // Interquartile range
+    ld m_thetaQCD{ 0 };    // Quartile coefficient of dispersion
+    ld m_thetaSkewness{ 0 };
+    ld m_thetaKurtosis{ 0 };
 
     // areas
-    ld m_totalA{ 0 };
+    ld m_areaTotal{ 0 };
     ld m_areaMean{ 0 };
     ld m_areaStd{ 0 };
     gdt::interval<ld> m_areaRange;
-
-    // cluster
-    ld m_lowH{ 0 };
+    ld m_areaCV{ 0 };     // Coefficient of Variation (or Relative Standard Deviation)
+    ld m_areaMAD{ 0 };    // Median Absolute Deviation
+    ld m_areaQ1{ 0 };     // First quartile (25%)
+    ld m_areaMedian{ 0 }; // Second quartile (50%)
+    ld m_areaQ3{ 0 };     // Third quartile (75%)
+    ld m_areaIQR{ 0 };    // Interquartile range
+    ld m_areaQCD{ 0 };    // Quartile coefficient of dispersion
 
     // heights
     ld m_heightMean{ 0 };
     ld m_heightStd{ 0 };
-    ld m_maxDeltaHeight{ 0 };
     gdt::interval<ld> m_heightRange;
     ld m_heightCV{ 0 };     // Coefficient of Variation (or Relative Standard Deviation)
     ld m_heightMAD{ 0 };    // Median Absolute Deviation
@@ -85,14 +66,12 @@ private:
     ld m_heightQ3{ 0 };     // Third quartile (75%)
     ld m_heightIQR{ 0 };    // Interquartile range
     ld m_heightQCD{ 0 };    // Quartile coefficient of dispersion
-
-    // shape parameters
-    ld m_skewness{ 0 };
-    ld m_kurtosis{ 0 };
+    ld m_heightCb{ 0 };     // Lowest cluster proportion
 
     // Correlations
     ld m_ATCorr{ 0 }; // Correlation between theta and area
     ld m_THCorr{ 0 }; // Correlation between theta and height
+    ld m_AHCorr{ 0 }; // Correlation between areas and height
 
     static int wHead;
     static int wCell;
@@ -101,7 +80,7 @@ private:
     scal computeAnisotropy() const;
     
 public:
-    StatisticsTool(const TriangleMesh* _mesh, ErrorStats error = { }, int n_features = -1);
+    StatisticsTool(const TriangleMesh* _mesh, scal error = 0, int n_features = -1);
     ~StatisticsTool();
 
     // set variables

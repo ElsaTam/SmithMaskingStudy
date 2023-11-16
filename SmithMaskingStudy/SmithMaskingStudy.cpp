@@ -111,19 +111,9 @@ void run(const UserParams& params) {
             case Method::AMBIENT_OCCLUSION:
                 analyzer.ambientOcclusion();
                 break;
-            case Method::PLOT_DISTRIB:
-                //analyzer.distribCuts();
-                analyzer.distrib();
-                //analyzer.compareDistribTmp();
-                break;
             case Method::STATISTICS:
-            {
-                csv::CSVWriter* csvWriter = new csv::CSVWriter(params.pathParams.outputsFolder + "statistics/heights_and_thetas.csv", std::ios_base::app);
-                analyzer.statistics(csvWriter);
-                csvWriter->close();
-                delete csvWriter;
+                analyzer.statistics(true);
                 break;
-            }
             case Method::GENERATE_MICROFLAKES:
                 //analyzer.normals();
                 //analyzer.statistics();

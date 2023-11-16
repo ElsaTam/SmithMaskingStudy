@@ -229,6 +229,14 @@ std::string Analyzer::getFolder(const std::string& root) const
     }
 }
 
+scal Analyzer::partial_error(scal ref, scal estimation) const
+{
+    return 2.f * abs(ref - estimation) / (ref + estimation); // since G1 > 0, no need for [abs() + abs()] at the denominator
+}
+scal Analyzer::normalize_error(scal sum_E, int N) const
+{
+    return sum_E * 100.f / (scal)N;
+}
 
 // ------------------------------------------------------------------------- //
 // -----------------------------      G1      ------------------------------ //
@@ -251,6 +259,8 @@ void Analyzer::G1()
 
     std::vector<std::vector<gdt::vec3sc>> pts_rc(D.nPhi), pts_smith(D.nPhi), pts_diff(D.nPhi);
     std::vector<gdt::vec3sc> col_rc, col_smith, col_diff;
+
+    scal SMAPE = 0;
 
     for (int i = 0; i < D.nPhi; ++i) {
         scal phi = D.phiStart + i * D.phiRange / (scal)D.nPhi; // [ -pi, ..., ..., ... ], pi
@@ -288,6 +298,8 @@ void Analyzer::G1()
             // for csv files
             vector_g1_smith.push_back({ csv::elem::Tag::SCAL, G1_smith });
             vector_g1_rc.push_back({ csv::elem::Tag::SCAL, G1_rc });
+            // for error
+            SMAPE += partial_error(G1_rc, G1_smith);
         }
 
         // Write rows
@@ -311,6 +323,10 @@ void Analyzer::G1()
     PlotsGrapher::cmplot    (getFolder("G1/3D/") + mesh->name + "_Smith_colormap.png",     col_smith);
     PlotsGrapher::splotDiff (getFolder("G1/3D/") + mesh->name + "_ashikhmin_diff",         pts_diff);
     PlotsGrapher::cmplotDiff(getFolder("G1/3D/") + mesh->name + "_ashikhmin_colormap.png", col_diff, "magma");
+
+    // Finalize error computation
+    SMAPE = normalize_error(SMAPE, D.nPhi * D.nTheta);
+    Console::info << Console::timeStamp << "Error (SMAPE) = " << SMAPE << std::endl;
 
     EXIT
 }
@@ -614,86 +630,6 @@ void Analyzer::ambientOcclusion()
 
 
 
-// ------------------------------------------------------------------------- //
-// ----------------------------      ERROR     ----------------------------- //
-// ------------------------------------------------------------------------- //
-
-scal Analyzer::error(scal theta, scal phi, const MicrofacetDistribution* NDF)
-{
-    scal measured = optixRenderer->G1(phi, theta);
-    scal computed = NDF->G1(Conversion::polar_to_cartesian(theta, phi), { 0, 0, 1 });
-    return abs(measured - computed);
-}
-
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics/stats.hpp>
-#include <boost/accumulators/statistics/mean.hpp>
-#include <boost/accumulators/statistics/variance.hpp>
-#include <boost/accumulators/statistics/max.hpp>
-#include <boost/accumulators/statistics/min.hpp>
-using namespace boost::accumulators;
-
-ErrorStats Analyzer::error()
-{
-    GPU_ENTER
-
-    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
-
-    Console::out << Console::timeStamp << "Analyzer computing error..." << std::endl;
-
-    ErrorStats E;
-    E.integral = 0;
-
-    scal dPhi = D.phiRange / (scal)(D.nPhi);
-    scal dTheta = D.thetaRange / (scal)(D.nTheta);
-
-    std::unique_ptr<csv::CSVWriter> writer(new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_Error.csv"));
-    accumulator_set<scal, stats<tag::min, tag::max, tag::immediate_mean, tag::variance> > accError;
-
-    std::vector<csv::elem> thetas;
-    thetas.push_back({ csv::elem::Tag::STRING, "" });
-    for (int j = 0; j < D.nTheta; ++j) {
-        scal theta = D.thetaStart + j * dTheta;
-        thetas.push_back({ csv::elem::Tag::SCAL, theta });
-    }
-    writer->writeRow(thetas);
-
-    for (int i = 0; i < D.nPhi; ++i) {
-        scal phi = D.phiStart + i * dPhi;
-
-        std::vector<csv::elem> errors;
-        errors.push_back({ csv::elem::Tag::SCAL, phi });
-
-        for (int j = 0; j < D.nTheta; ++j) {
-            scal theta = D.thetaStart + j * dTheta;
-            scal e = error(theta, phi, discrete_ndf.get());
-            errors.push_back({ csv::elem::Tag::SCAL, e });
-            accError(e);
-            E.integral += e * abs(sin(theta));
-        }
-
-        writer->writeRow(errors);
-
-        if (Parameters::userParams.outLevel >= OutLevel::INFO) {
-            Console::light << Console::timePad << Console::indent;
-            Console::light << "(" << std::setfill(' ') << std::setw(std::to_string(D.nPhi).length()) << i << " / " << D.nPhi << ") ";
-            Console::light << "Current error = " << std::to_string(E.integral);
-            Console::light << "     ###     phi = " << std::to_string(phi) << std::endl;
-        }
-    }
-    E.integral *= dPhi * dTheta;
-    E.mean = extract::mean(accError);
-    E.std = sqrt(extract::variance(accError));
-    E.min = extract::min(accError);
-    E.max = extract::max(accError);
-
-    Console::prog << Console::timePad << "Error = " << E.integral << std::endl;
-
-    EXIT
-    return E;
-}
-
-
 
 // ------------------------------------------------------------------------- //
 // -----------------------      DECOUPE EN SETS     ------------------------ //
@@ -768,91 +704,50 @@ void Analyzer::sets()
 
 
 // ------------------------------------------------------------------------- //
-// ----------------------------      DATA      ----------------------------- //
+// ----------------------------      ERROR      ---------------------------- //
 // ------------------------------------------------------------------------- //
 
-
-void Analyzer::distrib() const
+scal Analyzer::error()
 {
-    ENTER
+    GPU_ENTER
 
-    // Create distributions
-    std::unique_ptr<MicrofacetDistribution> analytic_ndf = std::make_unique<GGX>(0.5, 0.5);
+    // Create the discrete NDF
+    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
 
-    Discrete mesh_1024_ndf(*mesh, nullptr, 0);
+    scal SMAPE = 0;
 
-    TriangleMesh* mesh_1024CC = createMesh("12_subdivisions/VirtualGonio/ggx-0-50_1024_CatmullClark.obj");
-    Discrete mesh_1024CC_ndf(*mesh_1024CC, nullptr, 0);
-    delete mesh_1024CC;
+    for (int i = 0; i < D.nPhi; ++i) {
+        scal phi = D.phiStart + (i + 0.5f) * D.phiRange / (scal)D.nPhi; // [ -pi+d, ...+d, ...+d, ...+d ], pi+d
+        INFO_PHI(phi, i, D.nPhi);
 
-    TriangleMesh* mesh_4096 = createMesh("12_subdivisions/VirtualGonio/ggx-0-50_4096.obj");
-    Discrete mesh_4096_ndf(*mesh_4096, nullptr, 0);
-    delete mesh_4096;
-
-    const scal thetaStep = (mesh_1024_ndf.thetaEnd() - mesh_1024_ndf.thetaStart()) / ((scal)mesh_1024_ndf.thetaSize());
-    const scal phiStep = (mesh_1024_ndf.phiEnd() - mesh_1024_ndf.phiStart()) / ((scal)mesh_1024_ndf.phiSize());
-
-    bool D = true;
-    std::vector<gdt::vec3sc> colAnalyticD, colMesh1024, colMesh1024CC, colMesh4096;
-    scal analyticMaxD = 0, mesh1024MaxD = 0, mesh1024CCMaxD = 0, mesh4096MaxD = 0;
-
-    for (int i = 0; i < mesh_1024_ndf.phiSize(); ++i) {
-        for (int j = 0; j < mesh_1024_ndf.thetaSize(); ++j) {
-            const scal phi = mesh_1024_ndf.phiStart() + phiStep * (i + 0.5);
-            const scal theta = mesh_1024_ndf.thetaStart() + thetaStep * (j + 0.5);
-            const vec3sc wn = Conversion::polar_to_cartesian(theta, phi);
-
-            if (D) {
-                scal D_analytic = analytic_ndf->D(wn);
-                scal D_1024 = mesh_1024_ndf.D(wn);
-                scal D_1024CC = mesh_1024CC_ndf.D(wn);
-                scal D_4096 = mesh_4096_ndf.D(wn);
-
-                colAnalyticD.push_back(Conversion::polar_to_colormap(theta, phi, D_analytic));
-                if (analyticMaxD < D_analytic) analyticMaxD = D_analytic;
-
-                colMesh1024.push_back(Conversion::polar_to_colormap(theta, phi, D_1024));
-                if (mesh1024MaxD < D_1024) mesh1024MaxD = D_1024;
-
-                colMesh1024CC.push_back(Conversion::polar_to_colormap(theta, phi, D_1024CC));
-                if (mesh1024CCMaxD < D_1024CC) mesh1024CCMaxD = D_1024CC;
-
-                colMesh4096.push_back(Conversion::polar_to_colormap(theta, phi, D_4096));
-                if (mesh4096MaxD < D_4096) mesh4096MaxD = D_4096;
-            }
+        for (int j = 0; j < D.nTheta; ++j) {
+            scal theta = D.thetaStart + (j + 0.5f) * D.thetaRange / (scal)D.nTheta;
+            scal G1_rc = optixRenderer->G1(phi, theta);
+            scal G1_smith = discrete_ndf->G1(Conversion::polar_to_cartesian(theta, phi), { 0, 0, 1 });
+            SMAPE += partial_error(G1_rc, G1_smith);
         }
     }
 
-    std::stringstream file;
-    if (D) {
-        scal maxValue = std::max(std::max(std::max(analyticMaxD, mesh1024MaxD), mesh1024CCMaxD), mesh4096MaxD);
-
-        file.str(""); file.clear();
-        file << Parameters::userParams.pathParams.outputsFolder << "distribs/D_" << mesh->name << "_analytic.png";
-        PlotsGrapher::cmplotDiff(file.str(), colAnalyticD, "plasma", maxValue);
-
-        file.str(""); file.clear();
-        file << Parameters::userParams.pathParams.outputsFolder << "distribs/D_" << mesh->name << "_mesh_1024.png";
-        //PlotsGrapher::cmplotDiff(file.str(), colMesh1024, "plasma", maxValue);
-
-        file.str(""); file.clear();
-        file << Parameters::userParams.pathParams.outputsFolder << "distribs/D_" << mesh->name << "_mesh_1024_CC.png";
-        PlotsGrapher::cmplotDiff(file.str(), colMesh1024CC, "plasma", maxValue);
-
-        file.str(""); file.clear();
-        file << Parameters::userParams.pathParams.outputsFolder << "distribs/D_" << mesh->name << "_mesh_4096.png";
-        PlotsGrapher::cmplotDiff(file.str(), colMesh4096, "plasma", maxValue);
-    }
+    // Finalize error computation
+    SMAPE = normalize_error(SMAPE, D.nPhi * D.nTheta);
 
     EXIT
+
+    return SMAPE;
 }
 
-void Analyzer::statistics(csv::CSVWriter* writer)
-{
-    //ErrorStats E = error();
-    ErrorStats E;
 
-    ENTER
+// ------------------------------------------------------------------------- //
+// --------------------------      STATISTICS      ------------------------- //
+// ------------------------------------------------------------------------- //
+
+
+void Analyzer::statistics(bool computeError)
+{
+    GPU_ENTER
+    scal E = computeError ? error() : 0.f;
+    
+    csv::CSVWriter* writer = new csv::CSVWriter(getFolder("statistics/") + "statistics/heights_and_thetas.csv", std::ios_base::app);
 
     Console::out << Console::timeStamp << "Computing statistics..." << std::endl;
     StatisticsTool stats(mesh, E);
@@ -861,14 +756,12 @@ void Analyzer::statistics(csv::CSVWriter* writer)
     stats.print();
     Console::out << std::endl;
 
-    if (writer != nullptr) {
-        Console::out << Console::timePad << "Writing statistics..." << std::endl;
-        if (writer->numberOfLines() == 0) stats.CSVHeader(writer);
-        stats.toCSV(writer);
+    Console::out << Console::timePad << "Writing statistics..." << std::endl;
+    if (writer->numberOfLines() == 0) stats.CSVHeader(writer);
+    stats.toCSV(writer);
 
-        Console::succ << Console::timePad
-            << "Statistics append in " << writer->getFilename() << std::endl;
-    }
+    Console::succ << Console::timePad
+        << "Statistics append in " << writer->getFilename() << std::endl;
 
     EXIT
 }
@@ -910,9 +803,7 @@ void Analyzer::fullPipeline()
     Console::out << Console::timeStamp << "Analyzer computing G1s..." << std::endl;
 
     // Prepare error
-    ErrorStats E;
-    E.integral = 0;
-    accumulator_set<scal, stats<tag::min, tag::max, tag::immediate_mean, tag::variance> > accError;
+    scal E = 0;
 
     // Prepare iteration values
     const scal phiStart = Discrete::phiStart(), phiEnd = Discrete::phiEnd();
@@ -959,8 +850,7 @@ void Analyzer::fullPipeline()
             vector_error.push_back({        csv::elem::Tag::SCAL, e });
 
             // Increase error
-            accError(e);
-            E.integral += e * abs(sin(theta));
+            if (render) E += partial_error(G1_RT, G1_Ashikhmin);
         }
 
         // Write rows
@@ -973,19 +863,15 @@ void Analyzer::fullPipeline()
             Console::light << Console::timePad << Console::indent;
             Console::light << "(" << std::setfill(' ') << std::setw(std::to_string(nPhi).length()) << i << " / " << nPhi << ") ";
             if (render)
-                Console::light << "Current error = " << std::to_string(E.integral);
+                Console::light << "Current error = " << std::to_string(E);
             Console::light << "     ###     phi = " << std::to_string(phi) << std::endl;
         }
     }
 
     // End error statistics
     if (render) {
-        E.integral *= phiStep * thetaStep;
-        E.mean = extract::mean(accError);
-        E.std = sqrt(extract::variance(accError));
-        E.min = extract::min(accError);
-        E.max = extract::max(accError);
-        Console::prog << Console::timePad << "Error = " << E.integral << std::endl;
+        E = normalize_error(E, D.nPhi * D.nTheta);
+        Console::prog << Console::timePad << "Error = " << E << std::endl;
     }
 
     Console::out << Console::timeStamp << "Computing statistics..." << std::endl;

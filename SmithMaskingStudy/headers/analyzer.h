@@ -34,9 +34,12 @@ private:
 	// utils
 	std::unique_ptr<MicrofacetDistribution> getTheoricalNDF() const;
 	std::string getFolder(const std::string& root) const;
+	scal partial_error(scal ref, scal estimation) const;
+	scal normalize_error(scal sum_E, int N) const;
 
 	// tabulation
 	void tabulateFunctions(std::vector<std::string> filenames, std::vector<scal(*)(void*, scal, scal, scal, scal)> T_functions, std::vector<void*> contexts, scal phiIn = 0, scal thetaIn = 0);
+
 
 public:
 
@@ -57,6 +60,8 @@ public:
 	 */
 	void GAF();
 
+	scal error();
+
 	// Tabulation
 	void writeTheta(csv::CSVWriter& writer, bool fromDistrib = false) const;
 	void tabulate(bool D, bool G1_Ashikhmin, bool G1_RT);
@@ -68,16 +73,11 @@ public:
 	// Ambient occlusion
 	void ambientOcclusion();
 
-	// Error
-	ErrorStats error();
-	scal error(scal theta, scal phi, const MicrofacetDistribution* NDF);
-
 	// Decoupe en sets
 	void sets();
 
-	// Statistics (without GPU)
-	void distrib() const;
-	void statistics(csv::CSVWriter* writer = nullptr); // with GPU for error
+	// Statistics
+	void statistics(bool computeError);
 
 	void fullPipeline();
 };
