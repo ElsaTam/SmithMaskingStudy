@@ -44,14 +44,16 @@ public:
 
 	void setGeo(TriangleMesh* mesh);
 
-	// G1
 	/**
 	 * @brief Compute masking with ray tracing (\f$G_1^{rc}\f$) and with Smith equation (\f$G_1\f$). 
 	 * 
 	 */
 	void G1();
 
-	// GAF
+	/**
+	 * @brief Compute GAF with ray tracing and with Smith equation (\f$G_1 * G_1\f$).
+	 *
+	 */
 	void GAF();
 
 	// Tabulation
@@ -76,20 +78,9 @@ public:
 	void sets();
 
 	// Statistics (without GPU)
-	void normals() const;
-	void slopes() const;
-	void distribCuts() const;
 	void distrib() const;
-	void compareDistribTmp() const;
 	void statistics(csv::CSVWriter* writer = nullptr); // with GPU for error
-	void statisticsBySets(csv::CSVWriter* writer, int idxCluster = 2, int nClusters = 3) const;
 
 	void fullPipeline();
-
-	void compareEdB_border();
-	void compareEdB_directional();
-	void compareRaycastingSamples();
-	void benchmark();
-	void benchmark_n_features();
 };
 

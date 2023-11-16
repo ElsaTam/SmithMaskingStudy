@@ -187,16 +187,11 @@ UserParams Parameters::createUserParams(jParser::jValue jValue) const
 		else if (methodStr.compare("G1") == 0) userParams.method = Method::G1;
 		else if (methodStr.compare("TABULATION") == 0) userParams.method = Method::TABULATION;
 		else if (methodStr.compare("HISTOGRAMS") == 0) userParams.method = Method::HISTOGRAMS;
-		else if (methodStr.compare("COMPARE_EDB") == 0) userParams.method = Method::COMPARE_EDB;
-		else if (methodStr.compare("COMPARE_SAMPLES") == 0) userParams.method = Method::COMPARE_SAMPLES;
 		else if (methodStr.compare("AMBIENT_OCCLUSION") == 0) userParams.method = Method::AMBIENT_OCCLUSION;
-		else if (methodStr.compare("NORMAL_DISTRIB") == 0) userParams.method = Method::NORMAL_DISTRIB;
-		else if (methodStr.compare("SLOPE_DISTRIB") == 0) userParams.method = Method::SLOPE_DISTRIB;
 		else if (methodStr.compare("PLOT_DISTRIB") == 0) userParams.method = Method::PLOT_DISTRIB;
 		else if (methodStr.compare("STATISTICS") == 0) userParams.method = Method::STATISTICS;
 		else if (methodStr.compare("GENERATE_MICROFLAKES") == 0) userParams.method = Method::GENERATE_MICROFLAKES;
 		else if (methodStr.compare("FULL_PIPELINE") == 0) userParams.method = Method::FULL_PIPELINE;
-		else if (methodStr.compare("BENCHMARK") == 0) userParams.method = Method::BENCHMARK;
 	}
 
 	// Out level

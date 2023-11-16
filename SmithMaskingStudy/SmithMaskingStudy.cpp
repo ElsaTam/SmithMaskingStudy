@@ -79,8 +79,6 @@ void run(const UserParams& params) {
         || (params.method == Method::GAF)
         //|| (params.method == Method::TABULATION)
         //|| (params.method == Method::STATISTICS)
-        || (params.method == Method::COMPARE_EDB)
-        || (params.method == Method::COMPARE_SAMPLES)
         || (params.method == Method::AMBIENT_OCCLUSION)
         || (params.method == Method::GENERATE_MICROFLAKES);
 
@@ -122,21 +120,8 @@ void run(const UserParams& params) {
             case Method::HISTOGRAMS:
                 analyzer.tabulateHeights();
                 break;
-            case Method::COMPARE_EDB:
-                //analyzer.compareEdB_border();
-                analyzer.compareEdB_directional();
-                break;
-            case Method::COMPARE_SAMPLES:
-                analyzer.compareRaycastingSamples();
-                break;
             case Method::AMBIENT_OCCLUSION:
                 analyzer.ambientOcclusion();
-                break;
-            case Method::NORMAL_DISTRIB:
-                analyzer.normals();
-                break;
-            case Method::SLOPE_DISTRIB:
-                analyzer.slopes();
                 break;
             case Method::PLOT_DISTRIB:
                 //analyzer.distribCuts();
@@ -157,10 +142,6 @@ void run(const UserParams& params) {
                 break;
             case Method::FULL_PIPELINE:
                 analyzer.fullPipeline();
-                break;
-            case Method::BENCHMARK:
-                //analyzer.benchmark();
-                analyzer.benchmark_n_features();
                 break;
             default:
                 break;
@@ -308,7 +289,7 @@ int main(int argc, char* argv[]) {
 
         if (createOutputFolders(userParams.pathParams.outputsFolder)) {
             Logger::getInstance().setFolder(userParams.pathParams.outputsFolder + "logs/");
-            Logger::getInstance().enable(userParams.log || (userParams.method == Method::BENCHMARK));
+            Logger::getInstance().enable(userParams.log);
             run(userParams);
             Console::out << std::endl << std::endl;
         }

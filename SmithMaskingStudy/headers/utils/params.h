@@ -6,19 +6,14 @@
 // choice of method
 enum class Method {
     G1,
-    COMPARE_EDB,
-    COMPARE_SAMPLES,
     GAF,
     TABULATION,
     HISTOGRAMS,
     AMBIENT_OCCLUSION,
-    NORMAL_DISTRIB,
-    SLOPE_DISTRIB,
     PLOT_DISTRIB,
     STATISTICS,
     GENERATE_MICROFLAKES,
-    FULL_PIPELINE,
-    BENCHMARK
+    FULL_PIPELINE
 };
 
 enum class OutLevel {

@@ -94,21 +94,12 @@ void OptixRenderer::setUserParams()
     launchParams.visibility.tMax = Parameters::userParams.renderingParams.tMax;
     launchParams.visibility.useSmooth = Parameters::userParams.renderingParams.useSmooth;
 
-    // Side effect
-    if (Parameters::userParams.method != Method::COMPARE_EDB) {
-        launchParams.sideEffect.borderPercentage = Parameters::userParams.sideEffectParams.borderPercentage;
-        launchParams.sideEffect.directional = Parameters::userParams.sideEffectParams.directional;
-    }
-
     // Program type
     switch (Parameters::userParams.method) {
     case Method::G1:
-    case Method::COMPARE_EDB:
-    case Method::COMPARE_SAMPLES:
     case Method::GENERATE_MICROFLAKES:
     case Method::STATISTICS:
     case Method::FULL_PIPELINE:
-    case Method::BENCHMARK:
         launchParams.camera.programType = ProgramType::G1;
         break;
     case Method::GAF:
