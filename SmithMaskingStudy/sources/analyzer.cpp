@@ -114,8 +114,7 @@ void Analyzer::logRenderingInfo() const
 {
     switch (Parameters::userParams.method)
     {
-    case Method::G1_2D:
-    case Method::G1_3D:
+    case Method::G1:
     case Method::FULL_PIPELINE:
     case Method::BENCHMARK:
         LOG_MESSAGE("nPhi=" + std::to_string(Parameters::userParams.directionOutParams.nAzimuthSamples)
@@ -174,13 +173,6 @@ scal Analyzer::dLinear(int N, int i) const
 {
     if (N <= 1) return 0.f;
     return (scal)i / (scal)(N - 1);
-}
-
-vec3sc Analyzer::getDir(scal theta, scal phi) const
-{
-    vec3sc dir = Conversion::polar_to_cartesian(theta, phi);
-    //dir = Geometry::rotateAlongNormal(dir, mesh->meso_normal);
-    return dir;
 }
 
 std::unique_ptr<MicrofacetDistribution> Analyzer::getTheoricalNDF() const
@@ -252,51 +244,75 @@ std::string Analyzer::getFolder(const std::string& root) const
 // ------------------------------------------------------------------------- //
 
 
-void Analyzer::G1_2D()
+void Analyzer::G1()
 {
     GPU_ENTER
-        std::string folder = getFolder("G1/2D/");
+
+    // Create the discrete NDF
+    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
+
+    // Init csv writer to store results
+    csv::CSVWriter* writer_rc    = new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_G1-rc.csv");
+    csv::CSVWriter* writer_smith = new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_G1-smith.csv");
+    // Write first row (theta)
+    writeTheta(*writer_rc, false);
+    writeTheta(*writer_smith, false);
+
+    std::vector<std::vector<gdt::vec3sc>> pts_rc(D.nPhi), pts_smith(D.nPhi);
+    std::vector<gdt::vec3sc> col_rc, col_smith;
 
     for (int i = 0; i < D.nPhi; ++i) {
-        Vec_Sc pts_theta, pts_V;
-        scal phi = D.phiStart + dLinear(D.nPhi, i) * D.phiRange;
+        Vec_Sc pts_theta, pts_G1_rc, pts_G1_smith;
+        scal phi = D.phiStart + i * D.phiRange / (scal)D.nPhi; // [ -pi, ..., ..., ... ], pi
         INFO_PHI(phi, i, D.nPhi);
 
+        // One vector for each row
+        std::vector<csv::elem> vector_g1_rc;
+        std::vector<csv::elem> vector_g1_smith;
+        // Push back the first value: phi (at the start of the cell)
+        vector_g1_rc.push_back({ csv::elem::Tag::SCAL, phi });
+        vector_g1_smith.push_back({ csv::elem::Tag::SCAL, phi });
+
+        // Move phi at the center of the cell
+        phi = D.phiStart + (i + 0.5f) * D.phiRange / (scal)D.nPhi; // [ -pi+d, ...+d, ...+d, ...+d ], pi+d
+
         for (int j = 0; j < D.nTheta; ++j) {
-            scal theta = D.thetaStart + dLinear(D.nTheta, j) * D.thetaRange;
+            scal theta = D.thetaStart + (j + 0.5f) * D.thetaRange / (scal)D.nTheta;
+            // Compute raytracing (reference) and theoretical (Smith) masking
+            scal G1_rc = optixRenderer->G1(phi, theta);
+            scal G1_smith = discrete_ndf->G1(Conversion::polar_to_cartesian(theta, phi), { 0, 0, 1 });
+            // for final 3D plot
+            pts_rc[i].push_back(Conversion::polar_to_cartesian(theta, phi, G1_rc));
+            col_rc.push_back(Conversion::polar_to_colormap(theta, phi, G1_rc));
+            pts_smith[i].push_back(Conversion::polar_to_cartesian(theta, phi, G1_smith));
+            col_smith.push_back(Conversion::polar_to_colormap(theta, phi, G1_smith));
+            // for 2D plots
             pts_theta.push_back(theta);
-            pts_V.push_back(optixRenderer->G1(phi, theta));
+            pts_G1_rc.push_back(G1_rc);
+            pts_G1_smith.push_back(G1_smith);
+            vector_g1_smith.push_back({ csv::elem::Tag::SCAL, G1_smith });
+            vector_g1_rc.push_back({ csv::elem::Tag::SCAL, G1_rc });
         }
 
-        PlotsGrapher::plot(folder + mesh->name + "_" + std::to_string(phi) + ".png", pts_theta, { pts_V }, { });
+        // Write rows
+        writer_rc->writeRow(vector_g1_rc);
+        writer_smith->writeRow(vector_g1_smith);
+
+        // Plot 2D graph
+        PlotsGrapher::plot(getFolder("G1/2D/") + mesh->name + "_" + std::to_string(phi) + ".png", pts_theta, { pts_G1_rc, pts_G1_smith }, { "Ray casting", "Smith"});
     }
 
-    EXIT
-}
+    // Close csv writers
+    writer_rc->close();
+    writer_smith->close();
+    delete writer_rc;
+    delete writer_smith;
 
-void Analyzer::G1_3D()
-{
-    GPU_ENTER
-        std::string folder = getFolder("G1/3D/");
-
-    std::vector<std::vector<gdt::vec3sc>> pts(D.nPhi);
-    std::vector<gdt::vec3sc> col;
-
-    for (int i = 0; i < D.nPhi; ++i) {
-        pts[i].resize(D.nTheta);
-        scal phi = D.phiStart + dLinear(D.nPhi, i) * D.phiRange;
-        INFO_PHI(phi, i, D.nPhi);
-
-        for (int j = 0; j < D.nTheta; ++j) {
-            scal theta = D.thetaStart + dLinear(D.nTheta, j) * D.thetaRange;
-            scal r = optixRenderer->G1(phi, theta);
-            pts[i][j] = Conversion::polar_to_cartesian(theta, phi, r);
-            col.push_back(Conversion::polar_to_colormap(theta, phi, r));
-        }
-    }
-
-    PlotsGrapher::splot(folder + mesh->name + ".png", pts);
-    PlotsGrapher::cmplot(folder + mesh->name + "_colormap.png", col);
+    // Plot 3D graph
+    PlotsGrapher::splot(getFolder("G1/3D/") + mesh->name + "_RC.png", pts_rc);
+    PlotsGrapher::cmplot(getFolder("G1/3D/") + mesh->name + "_RC_colormap.png", col_rc);
+    PlotsGrapher::splot(getFolder("G1/3D/") + mesh->name + "_Smith.png", pts_smith);
+    PlotsGrapher::cmplot(getFolder("G1/3D/") + mesh->name + "_Smith_colormap.png", col_smith);
 
     EXIT
 }
@@ -322,7 +338,7 @@ void Analyzer::ashikhminDiff_3D()
             scal theta = D.thetaStart + dLinear(D.nTheta, j) * D.thetaRange;
 
             scal measured = optixRenderer->G1(phi, theta);
-            scal computed = discrete_ndf->G1(getDir(theta, phi), { });
+            scal computed = discrete_ndf->G1(Conversion::polar_to_cartesian(theta, phi), { });
             pts[i][j] = Conversion::polar_to_cartesian(theta, phi, computed);
             diff[i][j] = Conversion::polar_to_cartesian(theta, phi, abs(measured - computed));
             col.push_back(Conversion::polar_to_colormap(theta, phi, abs(measured - computed)));
@@ -437,10 +453,20 @@ void Analyzer::GAF_3D()
 
 */
 
-void Analyzer::writeTheta(csv::CSVWriter& writer) const
+void Analyzer::writeTheta(csv::CSVWriter& writer, bool fromDistrib) const
 {
-    const scal thetaStart = Discrete::thetaStart(), thetaEnd = Discrete::thetaEnd();
-    const size_t nTheta = Discrete::thetaSize();
+    scal thetaStart, thetaEnd;
+    size_t nTheta;
+    if (fromDistrib) {
+        thetaStart = Discrete::thetaStart();
+        thetaEnd = Discrete::thetaEnd();
+        nTheta = Discrete::thetaSize();
+    }
+    else {
+        thetaStart = D.thetaStart;
+        thetaEnd = D.thetaStart + D.thetaRange;
+        nTheta = D.nTheta;
+    }
     const scal thetaStep = (thetaEnd - thetaStart) / (scal)nTheta;
 
     std::vector<csv::elem> thetas;
@@ -620,7 +646,7 @@ void Analyzer::tabulateHeights()
 
         for (int j = 0; j < nTheta; ++j) {
             scal theta = thetaStart + j * thetaStep + 0.5 * thetaStep; // [0+d, ...+d, ...+d, ...+d ], pi/2+d
-            vector_h.push_back({ csv::elem::Tag::SCAL_ARR, hdf->hist(getDir(theta, phi)) });
+            vector_h.push_back({ csv::elem::Tag::SCAL_ARR, hdf->hist(Conversion::polar_to_cartesian(theta, phi)) });
         }
 
         // Write rows
@@ -662,7 +688,7 @@ void Analyzer::ambientOcclusion()
 scal Analyzer::error(scal theta, scal phi, const MicrofacetDistribution* NDF)
 {
     scal measured = optixRenderer->G1(phi, theta);
-    scal computed = NDF->G1(getDir(theta, phi), { 0, 0, 1 });
+    scal computed = NDF->G1(Conversion::polar_to_cartesian(theta, phi), { 0, 0, 1 });
     return abs(measured - computed);
 }
 
@@ -1144,10 +1170,10 @@ void Analyzer::fullPipeline()
     csv::CSVWriter* statWriter = new csv::CSVWriter(Parameters::userParams.pathParams.outputsFolder + "statistics/data_HR.csv", std::ios_base::app);
 
     // Write first row (theta)
-    writeTheta(*distributionWriter);
-    writeTheta(*G1AshikhminWriter);
-    writeTheta(*G1RTWriter);
-    writeTheta(*errorWriter);
+    writeTheta(*distributionWriter, true);
+    writeTheta(*G1AshikhminWriter, false);
+    writeTheta(*G1RTWriter, false);
+    writeTheta(*errorWriter, false);
 
     Console::out << Console::timeStamp << "Analyzer computing G1s..." << std::endl;
 
@@ -1186,7 +1212,7 @@ void Analyzer::fullPipeline()
         for (int j = 0; j < nTheta; ++j) {
             scal theta = thetaStart + j * thetaStep + 0.5 * thetaStep; // [0+d, ...+d, ...+d, ...+d ], pi/2+d
 
-            vec3sc dir = getDir(theta, phi);
+            vec3sc dir = Conversion::polar_to_cartesian(theta, phi);
 
             // Compute each value
             scal D            = discrete_ndf->D(dir);
@@ -1299,7 +1325,7 @@ void Analyzer::compareEdB_border()
             phi += 0.5 * phiStep; // [ -pi+d, ...+d, ...+d, ...+d ], pi+d
             for (int j = 0; j < D.nTheta; ++j) {
                 scal theta = D.thetaStart + j * thetaStep + 0.5 * thetaStep; // [0+d, ...+d, ...+d, ...+d ], pi/2+d
-                vec3sc dir = getDir(theta, phi);
+                vec3sc dir = Conversion::polar_to_cartesian(theta, phi);
                 scal G1_RT = optixRenderer->G1(phi, theta);
                 vector_g1_rt.push_back({ csv::elem::Tag::SCAL, G1_RT });
             }
@@ -1498,7 +1524,7 @@ void Analyzer::benchmark()
         scal phi = phiStart + (i+0.5) * phiStep;
         for (int j = 0; j < nTheta; ++j) {
             scal theta = thetaStart + (j+0.5) * thetaStep;
-            discrete_ndf->G1(getDir(theta, phi), { 0, 0, 1 });
+            discrete_ndf->G1(Conversion::polar_to_cartesian(theta, phi), { 0, 0, 1 });
         }
 
         if ((Parameters::userParams.outLevel >= OutLevel::INFO) && (i % 10 == 0)) {

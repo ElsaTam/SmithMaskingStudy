@@ -75,8 +75,7 @@ void cleanDirectory(const std::string& path)
 
 void run(const UserParams& params) {
 
-    bool useGPU = (params.method == Method::G1_2D)
-        || (params.method == Method::G1_3D)
+    bool useGPU = (params.method == Method::G1)
         || (params.method == Method::GAF_2D)
         || (params.method == Method::GAF_3D)
         //|| (params.method == Method::TABULATION)
@@ -103,11 +102,8 @@ void run(const UserParams& params) {
             analyzer.setGeo(mesh);
 
             switch (params.method) {
-            case Method::G1_2D:
-                analyzer.G1_2D();
-                break;
-            case Method::G1_3D:
-                analyzer.G1_3D();
+            case Method::G1:
+                analyzer.G1();
                 break;
             case Method::ASHIKHMIN_DIFF_3D:
                 analyzer.ashikhminDiff_3D();

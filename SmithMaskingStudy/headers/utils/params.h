@@ -5,8 +5,7 @@
 
 // choice of method
 enum class Method {
-    G1_2D,
-    G1_3D,
+    G1,
     ASHIKHMIN_DIFF_3D,
     COMPARE_EDB,
     COMPARE_SAMPLES,
@@ -100,7 +99,7 @@ bool operator==(const BinaryFilesParams& lhs, const BinaryFilesParams& rhs);
 bool operator!=(const BinaryFilesParams& lhs, const BinaryFilesParams& rhs);
 
 struct UserParams {
-    Method method                       { Method::G1_2D };
+    Method method                       { Method::G1 };
     OutLevel outLevel                   { OutLevel::TRACE };
     bool log                            { false };
     PathParams pathParams               { };

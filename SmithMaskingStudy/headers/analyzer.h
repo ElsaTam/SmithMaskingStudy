@@ -34,7 +34,6 @@ private:
 	// utils
 	scal dSmooth(int N, int i) const;
 	scal dLinear(int N, int i) const;
-	vec3sc getDir(scal theta, scal phi) const;
 	std::unique_ptr<MicrofacetDistribution> getTheoricalNDF() const;
 	std::string getFolder(const std::string& root) const;
 
@@ -46,8 +45,11 @@ public:
 	void setGeo(TriangleMesh* mesh);
 
 	// G1
-	void G1_2D();
-	void G1_3D();
+	/**
+	 * @brief Compute masking with ray tracing (\f$G_1^{rc}\f$) and with Smith equation (\f$G_1\f$). 
+	 * 
+	 */
+	void G1();
 	void ashikhminDiff_3D();
 
 	// GAF
@@ -55,7 +57,7 @@ public:
 	void GAF_3D();
 
 	// Tabulation
-	void writeTheta(csv::CSVWriter& writer) const;
+	void writeTheta(csv::CSVWriter& writer, bool fromDistrib = false) const;
 	void tabulateFunctions(std::vector<std::string> filenames, std::vector<scal (*)(void*, scal, scal, scal, scal)> T_functions, std::vector<void*> contexts, scal phiIn = 0, scal thetaIn = 0);
 	void tabulate(bool D, bool G1_Ashikhmin, bool G1_RT, Discrete* NDF = nullptr);
 	void tabulateDistrib(Discrete* NDF = nullptr);
