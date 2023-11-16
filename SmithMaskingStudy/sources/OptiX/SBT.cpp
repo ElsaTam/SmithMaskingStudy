@@ -78,7 +78,6 @@ void SBT::buildHitgroupRecords(const AccelerationStructure& AS)
         rec.data.triangleMesh.normal = (vec3sc*)AS.getNormalBuffer().d_pointer();
         rec.data.triangleMesh.index = (vec3i*)AS.getIndexBuffer().d_pointer();
         rec.data.triangleMesh.bounds = AS.getBounds();
-        Console::info << rec.data.triangleMesh.bounds.span() << std::endl;
         hitgroupRecords.push_back(rec);
     }
 

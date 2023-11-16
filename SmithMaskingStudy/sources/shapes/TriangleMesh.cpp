@@ -837,12 +837,11 @@ vec3sc sampleTriangle(TriangleMesh* mesh, const vec3i& idx, const vec2sc& seed, 
 
 
 #include "tools/statistics.h"
-TriangleMesh* createMesh(const std::string& objName)
+TriangleMesh* createMesh(const std::string& objPath)
 {
     TriangleMesh* mesh;
 
-    const std::string objFile = Parameters::userParams.pathParams.inputsFolder + objName;
-    const std::string binaryFile = objFile + ".bin";
+    const std::string binaryFile = objPath + ".bin";
 
     // Read from binary file if it is requested (default) and if the file exists
     if (Parameters::userParams.binaryFilesParams.readFromBinary)
@@ -861,14 +860,7 @@ TriangleMesh* createMesh(const std::string& objName)
     // Else, building from .obj file
     Console::out << Console::timeStamp << "Building triangle mesh..." << std::endl;
 
-    if (Parameters::userParams.method != Method::GENERATE_MICROFLAKES) {
-        mesh = loadOBJ(objFile);
-    }
-    else {
-        MicroflakesGenerator generator(Parameters::userParams.pathParams.inputsFolder + objName);
-        mesh = generator.createModel({ 1500, 1500 });
-        //ObjWriter::writeObj(params.pathParams.outputsFolder + name + ".obj", model);
-    }
+    mesh = loadOBJ(objPath);
 
 
     /*

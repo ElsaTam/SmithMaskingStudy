@@ -78,7 +78,7 @@ private:
 	void addFlake(const Flake& flake, TriangleMesh* mesh) const;
 
 public:
-	MicroflakesGenerator(const std::string& filename);
+	MicroflakesGenerator(const std::string& hfPath);
 
 	TriangleMesh* createModel(const gdt::vec2i gridSize) const;
 };

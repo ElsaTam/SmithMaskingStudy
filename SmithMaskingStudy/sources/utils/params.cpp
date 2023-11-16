@@ -4,11 +4,14 @@
 #include <fstream>
 #include <sstream>
 
+#include "utils/paths.h"
+
 
 bool operator==(const PathParams& lhs, const PathParams& rhs) {
-	if (lhs.inputsFolder.compare(rhs.inputsFolder) != 0) return false;
+	if (lhs.objFolder.compare(rhs.objFolder) != 0) return false;
+	if (lhs.hfFolder.compare(rhs.hfFolder) != 0) return false;
 	if (lhs.outputsFolder.compare(rhs.outputsFolder) != 0) return false;
-	if (lhs.objNames != rhs.objNames) return false;
+	if (lhs.surfNames != rhs.surfNames) return false;
 	return true;
 }
 
@@ -262,33 +265,23 @@ PathParams Parameters::createPathParamsForOBJ(jParser::jValue jValue) const
 	PathParams pathParams;
 
 	if (jValue.contains("objNames") || (jValue.contains("objMin") && jValue.contains("objMax")))
-		pathParams.objNames.clear();
+		pathParams.surfNames.clear();
 
 	// Mesh resolution
 	std::vector<std::string> resolutionFolders;
 	if (jValue.contains("resMin") && jValue.contains("resMax")) {
 		for (int i = jValue["resMin"].as_int(); i <= jValue["resMax"].as_int(); ++i) {
-			resolutionFolders.push_back(std::to_string(i) + "_subdivisions/");
+			pathParams.resolutions.push_back(i);
 		}
 	}
 	else if (jValue.contains("res")) {
-		resolutionFolders.push_back(std::to_string(jValue["res"].as_int()) + "_subdivisions/");
-	}
-	else {
-		resolutionFolders.push_back("10_subdivisions/");
+		pathParams.resolutions.push_back(jValue["res"].as_int());
 	}
 
 	// obj names
 	if (jValue.contains("objNames")) {
 		for (int i = 0; i < jValue["objNames"].size(); ++i) {
-			if (resolutionFolders.size() > 0) {
-				for (int j = 0; j < resolutionFolders.size(); ++j) {
-					pathParams.objNames.push_back(resolutionFolders[j] + jValue["objNames"][i].as_string());
-				}
-			}
-			else {
-				pathParams.objNames.push_back(jValue["objNames"][i].as_string());
-			}
+			pathParams.surfNames.push_back(jValue["objNames"][i].as_string());
 		}
 	}
 
@@ -297,14 +290,7 @@ PathParams Parameters::createPathParamsForOBJ(jParser::jValue jValue) const
 		for (int i = jValue["objMin"].as_int(); i <= jValue["objMax"].as_int(); ++i) {
 		    std::ostringstream oss;
 		    oss << std::setfill('0') << std::setw(3) << i;
-			if (resolutionFolders.size() > 0) {
-				for (int j = 0; j < resolutionFolders.size(); ++j) {
-					pathParams.objNames.push_back(resolutionFolders[j] + "PerTex/" + oss.str() + ".obj");
-				}
-			}
-			else {
-				pathParams.objNames.push_back(oss.str() + ".obj");
-			}
+			pathParams.surfNames.push_back("PerTex/" + oss.str());
 		}
 	}
 
@@ -312,8 +298,8 @@ PathParams Parameters::createPathParamsForOBJ(jParser::jValue jValue) const
 	if (jValue.contains("resetOutput")) {
 		pathParams.resetOutput = jValue["resetOutput"].as_bool();
 	}
-	if (jValue.contains("inputsFolder")) {
-		pathParams.inputsFolder = jValue["inputsFolder"].as_string();
+	if (jValue.contains("objFolder")) {
+		pathParams.objFolder = jValue["objFolder"].as_string();
 	}
 	if (jValue.contains("outputsFolder")) {
 		pathParams.outputsFolder = jValue["outputsFolder"].as_string();
@@ -341,12 +327,12 @@ PathParams Parameters::createPathParamsForHF(jParser::jValue jValue) const
 	PathParams pathParams;
 
 	if (jValue.contains("objNames") || (jValue.contains("objMin") && jValue.contains("objMax")))
-		pathParams.objNames.clear();
+		pathParams.surfNames.clear();
 
 	// hf names
 	if (jValue.contains("objNames")) {
 		for (int i = 0; i < jValue["objNames"].size(); ++i) {
-			pathParams.objNames.push_back(jValue["objNames"][i].as_string());
+			pathParams.surfNames.push_back(jValue["objNames"][i].as_string());
 		}
 	}
 
@@ -355,13 +341,29 @@ PathParams Parameters::createPathParamsForHF(jParser::jValue jValue) const
 		for (int i = jValue["objMin"].as_int(); i <= jValue["objMax"].as_int(); ++i) {
 			std::ostringstream oss;
 			oss << std::setfill('0') << std::setw(3) << i;
-			pathParams.objNames.push_back("heights/" + oss.str() + ".png");
+			pathParams.surfNames.push_back(oss.str());
 		}
+	}
+	
+	// Output mesh resolutions
+	if ((jValue.contains("resMin") && jValue.contains("resMax")) || jValue.contains("res")) {
+		pathParams.resolutions.clear();
+	}
+	if (jValue.contains("resMin") && jValue.contains("resMax")) {
+		for (int i = jValue["resMin"].as_int(); i <= jValue["resMax"].as_int(); ++i) {
+			pathParams.resolutions.push_back(i);
+		}
+	}
+	else if (jValue.contains("res")) {
+		pathParams.resolutions.push_back(jValue["res"].as_int());
 	}
 
 	// Folders
-	if (jValue.contains("inputsFolder")) {
-		pathParams.inputsFolder = jValue["inputsFolder"].as_string();
+	if (jValue.contains("hfFolder")) {
+		pathParams.hfFolder = jValue["hfFolder"].as_string();
+	}
+	if (jValue.contains("objFolder")) {
+		pathParams.objFolder = jValue["objFolder"].as_string();
 	}
 	if (jValue.contains("outputsFolder")) {
 		pathParams.outputsFolder = jValue["outputsFolder"].as_string();

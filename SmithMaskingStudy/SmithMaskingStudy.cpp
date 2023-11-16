@@ -1,10 +1,12 @@
 #include "analyzer.h"
 #include "shapes/TriangleMesh.h"
+#include "tools/microflakesGenerator.h"
 #include "tools/csvWriter.h"
 #include "tools/logger.h"
 #include "tools/objWriter.h"
 #include "utils/console.h"
 #include "utils/params.h"
+#include "utils/paths.h"
 #include <filesystem>
 
 void help() {
@@ -84,54 +86,71 @@ void run(const UserParams& params) {
 
     Analyzer analyzer(nullptr, useGPU);
 
-    // for each model
-    for (const std::string& objName : params.pathParams.objNames)
+    // for each surface
+    for (const std::string& surfName : params.pathParams.surfNames)
     {
-        Console::info << Console::line << Console::line;
-        Console::info << objName << std::endl;
-        LOG_NAME(params.pathParams.inputsFolder, objName);
+        // for each resolution
+        for (int res : params.pathParams.resolutions)
+        {
+            Console::info << Console::line << Console::line;
+            Console::info << surfName << ", " << res << " subdivisions" << std::endl;
+            Console::info << Console::line << std::endl;
 
-        try {
-            TriangleMesh* mesh = createMesh(objName);
+            try {
+                TriangleMesh* mesh;
+                if (params.method == Method::GENERATE_MICROFLAKES) {
+                    LOG_NAME(params.pathParams.hfFolder, surfName);
+                    MicroflakesGenerator generator(Path::hfPath(surfName));
+                    int size = pow(2, res);
+                    mesh = generator.createModel({ size, size });
+                }
+                else {
+                    LOG_NAME(params.pathParams.objFolder, surfName);
+                    mesh = createMesh(Path::objPath(surfName, res));
+                }
 
-            LOG_OBJ(mesh);
+                LOG_OBJ(mesh);
 
-            analyzer.setGeo(mesh);
+                analyzer.setGeo(mesh);
 
-            switch (params.method) {
-            case Method::G1:
-                analyzer.G1();
-                break;
-            case Method::GAF:
-                analyzer.GAF();
-                break;
-            case Method::D_TABULATION:
-                analyzer.tabulateDistrib();
-                break;
-            case Method::AMBIENT_OCCLUSION:
-                analyzer.ambientOcclusion();
-                break;
-            case Method::STATISTICS:
-                analyzer.statistics(true);
-                break;
-            case Method::GENERATE_MICROFLAKES:
-                //analyzer.normals();
-                //analyzer.statistics();
-                break;
-            case Method::FULL_PIPELINE:
-                analyzer.fullPipeline();
-                break;
-            default:
-                break;
+                switch (params.method) {
+                case Method::G1:
+                    analyzer.G1();
+                    break;
+                case Method::GAF:
+                    analyzer.GAF();
+                    break;
+                case Method::D_TABULATION:
+                    analyzer.tabulateDistrib();
+                    break;
+                case Method::AMBIENT_OCCLUSION:
+                    analyzer.ambientOcclusion();
+                    break;
+                case Method::STATISTICS:
+                    analyzer.statistics(true);
+                    break;
+                case Method::GENERATE_MICROFLAKES:
+                {
+                    ObjWriter::writeObj(Path::objPath(mesh->name, res), mesh);
+                    //analyzer.normals();
+                    //analyzer.statistics();
+                    break;
+                }
+                case Method::FULL_PIPELINE:
+                    analyzer.fullPipeline();
+                    break;
+                default:
+                    break;
+                }
+                delete mesh;
+
+                Console::succ << Console::timeStamp << "Done with " << surfName << std::endl;
             }
-            delete mesh;
-
-            Console::succ << Console::timeStamp << "Done with " << objName << std::endl;
-        }
-        catch (const std::exception& e) {
-            if (params.outLevel >= OutLevel::ERR)
-                Console::err << e.what() << std::endl;
-            LOG_ERROR(e.what());
+            catch (const std::exception& e) {
+                if (params.outLevel >= OutLevel::ERR)
+                    Console::err << e.what() << std::endl;
+                LOG_ERROR(e.what());
+            }
         }
     }
 }

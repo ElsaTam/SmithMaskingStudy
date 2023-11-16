@@ -87,8 +87,8 @@ struct TriangleMesh {
     }
 };
 
-TriangleMesh* loadOBJ(const std::string& objFile);
+TriangleMesh* createMesh(const std::string& objPath);
+TriangleMesh* loadOBJ(const std::string& objPath);
 TriangleMesh* createSubMesh(const TriangleMesh* _mesh, std::set<int> faceIDs);
 gdt::vec3sc fittingPlaneNormal(const std::vector<gdt::vec3sc>& vertices);
-TriangleMesh* createMesh(const std::string& objName);
 TriangleMesh* createFlatGrid();

@@ -30,10 +30,12 @@ enum class MicrofacetProfil {
 // path (input and output files and foldes) parameters
 struct PathParams {
     bool resetOutput                    { false };
-    std::string inputsFolder            { "Z:/obj/" };
+    std::string objFolder               { "Z:/obj/" };
+    std::string hfFolder                { "Z:/hf/" };
     std::string outputsFolder           { "Z:/outputs/SurfAnalyzer/" };
     std::string gnuplotPath             { "" };
-    std::vector<std::string> objNames   { "10 subdivisions/PerTex/001.obj" };
+    std::vector<std::string> surfNames  { "PerTex/001" };
+    std::vector<int> resolutions        { };
     std::string ptxFile                 { "./sources/cuda/devicePrograms.cu.ptx" };
 };
 bool operator==(const PathParams& lhs, const PathParams& rhs);
