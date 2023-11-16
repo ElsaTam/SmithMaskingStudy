@@ -38,10 +38,6 @@ private:
 	std::unique_ptr<MicrofacetDistribution> getTheoricalNDF() const;
 	std::string getFolder(const std::string& root) const;
 
-	scal ashikhmin_eq20(const vec3sc& wo, const vec3sc& wn) const;
-	scal ashikhmin_eq21(const vec3sc& wo, const vec3sc& wn, Discrete* ndf) const;
-	scal ashikhmin_eq25(const vec3sc& wo, const vec3sc& wn, Discrete* ndf) const;
-
 public:
 
 	Analyzer(TriangleMesh* mesh = nullptr, bool useGPU = false);
@@ -52,10 +48,6 @@ public:
 	// G1
 	void G1_2D();
 	void G1_3D();
-	void compareToSmith();
-	void compareToAshikhminEquations();
-	void compareToAshikhmin();
-	void compareAshikhminToHeitz();
 	void ashikhminDiff_3D();
 
 	// GAF

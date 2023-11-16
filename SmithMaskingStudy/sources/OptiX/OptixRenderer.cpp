@@ -104,8 +104,6 @@ void OptixRenderer::setUserParams()
     switch (Parameters::userParams.method) {
     case Method::G1_2D:
     case Method::G1_3D:
-    case Method::COMPARE_SMITH:
-    case Method::COMPARE_ASHIKHMIN:
     case Method::COMPARE_EDB:
     case Method::COMPARE_SAMPLES:
     case Method::ASHIKHMIN_DIFF_3D:

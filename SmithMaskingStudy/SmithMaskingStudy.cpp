@@ -81,8 +81,6 @@ void run(const UserParams& params) {
         || (params.method == Method::GAF_3D)
         //|| (params.method == Method::TABULATION)
         //|| (params.method == Method::STATISTICS)
-        || (params.method == Method::COMPARE_SMITH)
-        || (params.method == Method::COMPARE_ASHIKHMIN)
         || (params.method == Method::COMPARE_EDB)
         || (params.method == Method::COMPARE_SAMPLES)
         || (params.method == Method::AMBIENT_OCCLUSION)
@@ -135,14 +133,6 @@ void run(const UserParams& params) {
             case Method::HISTOGRAMS:
                 analyzer.tabulateHeights();
                 break;
-            case Method::COMPARE_SMITH:
-                analyzer.compareToSmith();
-                break;
-            case Method::COMPARE_ASHIKHMIN:
-                analyzer.compareToAshikhmin();
-                //analyzer.compareToAshikhminEquations();
-                //analyzer.compareAshikhminToHeitz();
-                break;
             case Method::COMPARE_EDB:
                 //analyzer.compareEdB_border();
                 analyzer.compareEdB_directional();
@@ -170,13 +160,11 @@ void run(const UserParams& params) {
                 analyzer.statistics(csvWriter);
                 csvWriter->close();
                 delete csvWriter;
-
                 break;
             }
             case Method::GENERATE_MICROFLAKES:
                 //analyzer.normals();
                 //analyzer.statistics();
-                analyzer.compareToAshikhmin();
                 break;
             case Method::FULL_PIPELINE:
                 analyzer.fullPipeline();

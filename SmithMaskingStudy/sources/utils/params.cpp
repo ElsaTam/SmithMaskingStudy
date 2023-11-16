@@ -190,8 +190,6 @@ UserParams Parameters::createUserParams(jParser::jValue jValue) const
 		else if (methodStr.compare("TABULATION") == 0) userParams.method = Method::TABULATION;
 		else if (methodStr.compare("HISTOGRAMS") == 0) userParams.method = Method::HISTOGRAMS;
 		else if (methodStr.compare("ASHIKHMIN_DIFF_3D") == 0) userParams.method = Method::ASHIKHMIN_DIFF_3D;
-		else if (methodStr.compare("COMPARE_SMITH") == 0) userParams.method = Method::COMPARE_SMITH;
-		else if (methodStr.compare("COMPARE_ASHIKHMIN") == 0) userParams.method = Method::COMPARE_ASHIKHMIN;
 		else if (methodStr.compare("COMPARE_EDB") == 0) userParams.method = Method::COMPARE_EDB;
 		else if (methodStr.compare("COMPARE_SAMPLES") == 0) userParams.method = Method::COMPARE_SAMPLES;
 		else if (methodStr.compare("AMBIENT_OCCLUSION") == 0) userParams.method = Method::AMBIENT_OCCLUSION;
