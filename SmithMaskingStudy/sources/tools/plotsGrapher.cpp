@@ -3,6 +3,7 @@
 #include "gnuplot-iostream.h"
 #include "utils/console.h"
 #include "utils/params.h"
+#include "utils/paths.h"
 
 
 
@@ -43,15 +44,12 @@ namespace gnuplotio {
 // ---------- CHECK IF A CORRECT PATH TO GNUPLOT HAS BEN PROVIDED --------------
 
 bool gnuplot_found() {
-    FILE* file;
-    errno_t err = fopen_s(&file, Parameters::userParams.pathParams.gnuplotPath.c_str(), "r");
-    if (err == 0) {
-        fclose(file);
+    if (Path::exists(Path::gnuplotExe())) {
         return true;
     }
     else {
         Console::err << Console::timePad << "Could not find gnuplot executable at "
-            << Parameters::userParams.pathParams.gnuplotPath.c_str()
+            << Path::gnuplotExe()
             << ". Plots can't be created.";
         return false;
     }
@@ -74,7 +72,7 @@ void PlotsGrapher::scatter2D(const std::string& filename, const std::vector<scal
 {
     if (gnuplot_found()) {
         {
-            Gnuplot gp(Parameters::userParams.pathParams.gnuplotPath);
+            Gnuplot gp(Path::gnuplotExe());
             gp << "set terminal png truecolor enhanced size 1000,1000\n";
             gp << "set output \"" << filename << "\"\n";
             gp << "set xtics font \"Verdana,15\"\n";
@@ -98,7 +96,7 @@ void PlotsGrapher::scatter3D(const std::string& filename, const std::vector<scal
 {
     if (gnuplot_found()) {
         {
-            Gnuplot gp(Parameters::userParams.pathParams.gnuplotPath);
+            Gnuplot gp(Path::gnuplotExe());
             gp << "set terminal png truecolor enhanced size 1000,500\n";
             gp << "set output \"" << filename << "\"\n";
             gp << "set mapping spherical\n";
@@ -136,7 +134,7 @@ void PlotsGrapher::plot(const std::string& filename,
         }
 
         {
-            Gnuplot gp(Parameters::userParams.pathParams.gnuplotPath);
+            Gnuplot gp(Path::gnuplotExe());
             gp << "set encoding utf8\n";
             gp << "set terminal png size 1500,1100 enhanced font 'Verdana,50'\n";
             //gp << "set terminal png size 1300,1100\n";
@@ -181,7 +179,7 @@ void PlotsGrapher::plotG1(const std::string& filename,
         }
 
         {
-            Gnuplot gp(Parameters::userParams.pathParams.gnuplotPath);
+            Gnuplot gp(Path::gnuplotExe());
             gp << "set encoding utf8\n";
             gp << "set terminal png size 1500,1100 enhanced font 'Verdana,50'\n";
             //gp << "set terminal png size 1300,1100\n";
@@ -229,7 +227,7 @@ void PlotsGrapher::plotDistrib(const std::string& filename,
         }
 
         {
-            Gnuplot gp(Parameters::userParams.pathParams.gnuplotPath);
+            Gnuplot gp(Path::gnuplotExe());
             gp << "set encoding utf8\n";
             gp << "set terminal png size 1300,1100 enhanced font 'Verdana,30'\n";
             gp << "set output \"" << filename << "\"\n";
@@ -259,7 +257,7 @@ void PlotsGrapher::splot(const std::string& filename, const std::vector<std::vec
 {
     if (gnuplot_found()) {
         {
-            Gnuplot gp(Parameters::userParams.pathParams.gnuplotPath);
+            Gnuplot gp(Path::gnuplotExe());
             gp << "set terminal png size 1000, 1000\n";
             gp << "set output \"" << filename << "\"\n";
             gp << "set hidden3d\n";
@@ -274,7 +272,7 @@ void PlotsGrapher::splotDiff(const std::string& filename, const std::vector<std:
 {
     if (gnuplot_found()) {
         {
-            Gnuplot gpTop(Parameters::userParams.pathParams.gnuplotPath);
+            Gnuplot gpTop(Path::gnuplotExe());
             gpTop << "set terminal png size 1000, 1000 enhanced font 'Verdana,30'\n";
             gpTop << "set output \"" << filename << "_top.png\"\n";
             gpTop << "set hidden3d\n";
@@ -291,7 +289,7 @@ void PlotsGrapher::splotDiff(const std::string& filename, const std::vector<std:
         outputSuccess(filename + "_top.png");
 
         {
-            Gnuplot gpFront(Parameters::userParams.pathParams.gnuplotPath);
+            Gnuplot gpFront(Path::gnuplotExe());
             gpFront << "set terminal png size 1000, 1000 enhanced font 'Verdana,30'\n";
             gpFront << "set output \"" << filename << "_front.png\"\n";
             gpFront << "set hidden3d\n";
@@ -306,7 +304,7 @@ void PlotsGrapher::splotDiff(const std::string& filename, const std::vector<std:
         outputSuccess(filename + "_front.png");
 
         {
-            Gnuplot gpRight(Parameters::userParams.pathParams.gnuplotPath);
+            Gnuplot gpRight(Path::gnuplotExe());
             gpRight << "set terminal png size 1000, 1000 enhanced font 'Verdana,30'\n";
             gpRight << "set output \"" << filename << "_right.png\"\n";
             gpRight << "set hidden3d\n";
@@ -331,7 +329,7 @@ void PlotsGrapher::cmplot(const std::string& filename, const std::vector<gdt::ve
 {
     if (gnuplot_found()) {
         {
-            Gnuplot gp(Parameters::userParams.pathParams.gnuplotPath);
+            Gnuplot gp(Path::gnuplotExe());
             gp << "set terminal pngcairo size 2000,2000\n";
             gp << "set output '" << filename << "'\n";
             gp << "set size square\n";
@@ -358,7 +356,7 @@ void PlotsGrapher::cmplotDiff(const std::string& filename, const std::vector<gdt
 {
     if (gnuplot_found()) {
         {
-            Gnuplot gp(Parameters::userParams.pathParams.gnuplotPath);
+            Gnuplot gp(Path::gnuplotExe());
             gp << "set loadpath \"Z:/gnuplot/palettes\"\n";
             //gp << "load \"" << palette << ".pal\"\n";
             gp << "set palette gray\n";

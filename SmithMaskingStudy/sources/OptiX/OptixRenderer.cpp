@@ -2,6 +2,7 @@
 #include "utils/console.h"
 #include "utils/math/math.h"
 #include "utils/params.h"
+#include "utils/paths.h"
 
 // this include may only appear in a single source file:
 #include <optix_function_table_definition.h>
@@ -19,7 +20,7 @@ OptixRenderer::OptixRenderer(const TriangleMesh* _mesh) :
     Console::out << Console::timeStamp
                  << "Building OptixRenderer..." << std::endl;
 
-	const char* ptx_path = Parameters::userParams.pathParams.ptxFile.c_str();
+	const char* ptx_path = Path::ptxFile().c_str();
 
 	// Initialize optix and create the context (static)
 	context = Context();
@@ -183,18 +184,7 @@ void OptixRenderer::render(scal phi, scal theta)
     dir = Geometry::rotateAlongNormal(dir, mesh->meso_normal);
     launchParams.visibility.directionOut = dir;
 
-    std::string fileName = "";
-    if (Parameters::userParams.renderingParams.createPicture)
-    {
-        fileName = Parameters::userParams.pathParams.outputsFolder;
-        fileName += mesh->name;
-        fileName += "_phi_" + std::to_string(phi);
-        fileName += "_theta_" + std::to_string(theta);
-        fileName += "_size_" + std::to_string(launchParams.frame.size[0]); 
-        fileName += "_samples_" + std::to_string(launchParams.camera.nPixelSamples);
-        fileName += "_border_" + std::to_string(launchParams.sideEffect.borderPercentage);
-        fileName += ".png";
-    }
+    std::string fileName = Parameters::userParams.renderingParams.createPicture ? Path::renderImg(mesh->name, launchParams, phi, theta) : "";
     render(fileName);
 }
 

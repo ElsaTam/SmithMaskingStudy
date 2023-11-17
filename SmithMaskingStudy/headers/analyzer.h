@@ -33,7 +33,6 @@ private:
 
 	// utils
 	std::unique_ptr<MicrofacetDistribution> getTheoricalNDF() const;
-	std::string getFolder(const std::string& root) const;
 	scal partial_error(scal ref, scal estimation) const;
 	scal normalize_error(scal sum_E, int N) const;
 

@@ -87,10 +87,10 @@ void run(const UserParams& params) {
     Analyzer analyzer(nullptr, useGPU);
 
     // for each surface
-    for (const std::string& surfName : params.pathParams.surfNames)
+    for (const std::string& surfName : Path::surfaceNames())
     {
         // for each resolution
-        for (int res : params.pathParams.resolutions)
+        for (int res : Path::resolutions())
         {
             Console::info << Console::line << Console::line;
             Console::info << surfName << ", " << res << " subdivisions" << std::endl;
@@ -99,14 +99,14 @@ void run(const UserParams& params) {
             try {
                 TriangleMesh* mesh;
                 if (params.method == Method::GENERATE_MICROFLAKES) {
-                    LOG_NAME(params.pathParams.hfFolder, surfName);
-                    MicroflakesGenerator generator(Path::hfPath(surfName));
+                    LOG_NAME(Path::hfFolder(), surfName);
+                    MicroflakesGenerator generator(Path::hfFile(surfName));
                     int size = pow(2, res);
                     mesh = generator.createModel({ size, size });
                 }
                 else {
-                    LOG_NAME(params.pathParams.objFolder, surfName);
-                    mesh = createMesh(Path::objPath(surfName, res));
+                    LOG_NAME(Path::objFolder(), surfName);
+                    mesh = createMesh(Path::objFile(surfName, res));
                 }
 
                 LOG_OBJ(mesh);
@@ -131,7 +131,7 @@ void run(const UserParams& params) {
                     break;
                 case Method::GENERATE_MICROFLAKES:
                 {
-                    ObjWriter::writeObj(Path::objPath(mesh->name, res), mesh);
+                    ObjWriter::writeObj(Path::objFile(mesh->name, res), mesh);
                     //analyzer.normals();
                     //analyzer.statistics();
                     break;
@@ -156,95 +156,59 @@ void run(const UserParams& params) {
 }
 
 void createSubdvisionFolders(const std::string& root) {
-    for (int i = 6; i < 13; ++i) {
-        std::string dir = root + "subd" + std::to_string(i) + "/";
+    for (int i : Path::resolutions()) {
+        std::string dir = root + Path::subdivisionFolderName(i);
         CreateDirectoryA(dir.c_str(), NULL);
     }
 }
 
-bool createOutputFolders(const std::string& root) {
-    Console::out << "Create folders : " << root << std::endl;
+void createFolder(const std::string& path, bool withSubdivisions) {
+    CreateDirectoryA(path.c_str(), NULL);
+    if (withSubdivisions) createSubdvisionFolders(path);
+}
+
+bool createOutputFolders() {
+    Console::out << "Create folders : " << Path::outputRootFolder() << std::endl;
     // check if root exists :
-    DWORD ftyp = GetFileAttributesA(root.c_str());
-    if (ftyp == INVALID_FILE_ATTRIBUTES) {
-        Console::err << "Incorrect output path: " << root << std::endl;
-        return false;  //something is wrong with your path!
+    if (! Path::exists(Path::outputRootFolder())) {
+        Console::err << "Incorrect output path: " << Path::outputRootFolder() << std::endl;
+        return false;
     }
-    if (!(ftyp & FILE_ATTRIBUTE_DIRECTORY)) {
-        Console::err << "Output path is not a directory: " << root << std::endl;
-        return false;   // this is not a directory!
+    if (! Path::isFolder(Path::outputRootFolder())) {
+        Console::err << "Output path is not a directory: " << Path::outputRootFolder() << std::endl;
+        return false;
     }
 
     // logs
-    std::string currentDir = root + "logs/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
+    createFolder(Path::logs_Folder(), false);
 
-    // visibility G1
-    currentDir = root + "G1/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    currentDir = root + "G1/" + "2D/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
+    // renders
+    createFolder(Path::renders_Folder(), false);
 
     // G1
-    currentDir = root + "G1/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    currentDir = root + "G1/" + "2D/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
-    currentDir = root + "G1/" + "3D/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
-    currentDir = root + "G1/" + "Smith/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
-    currentDir = root + "G1/" + "Ashikhmin/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
-    currentDir = root + "G1/" + "derivative/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
-    currentDir = root + "G1/" + "derivative2/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
+    createFolder(Path::G1_Folder(), false);
+    createFolder(Path::G1_2D_Folder(), true);
+    createFolder(Path::G1_3D_Folder(), true);
 
     // GAF
-    currentDir = root + "GAF/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    currentDir = root + "GAF/" + "2D/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
-    currentDir = root + "GAF/" + "3D/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
+    createFolder(Path::GAF_Folder(), false);
+    createFolder(Path::GAF_2D_Folder(), true);
+    createFolder(Path::GAF_3D_Folder(), true);
 
     // tabulations
-    currentDir = root + "tabulations/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
+    createFolder(Path::tabulations_Folder(), true);
 
     // ambient occlusion
-    currentDir = root + "ambient_occlusion/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
+    createFolder(Path::ambientOcclusion_Folder(), true);
 
     // statistics
-    currentDir = root + "statistics/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
+    createFolder(Path::statistics_Folder(), true);
 
-    // normals
-    currentDir = root + "normals/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
-
-    // slopes
-    currentDir = root + "slopes/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
-    createSubdvisionFolders(currentDir);
-
-    // distribs
-    currentDir = root + "distribs/";
-    CreateDirectoryA(currentDir.c_str(), NULL);
+    if (!Path::checkPaths()) {
+        Path::checkPaths(true);
+        Console::err << "There were issues while creating folders. Please correct the paths manually before restarting the program." << std::endl;
+        return false;
+    }
 
     return true;
 }
@@ -284,8 +248,8 @@ int main(int argc, char* argv[]) {
     {
         const UserParams& userParams = parameters.getParamsForLaunch(launch);
 
-        if (createOutputFolders(userParams.pathParams.outputsFolder)) {
-            Logger::getInstance().setFolder(userParams.pathParams.outputsFolder + "logs/");
+        if (createOutputFolders()) {
+            Logger::getInstance().setFolder(Path::logs_Folder());
             Logger::getInstance().enable(userParams.log);
             run(userParams);
             Console::out << std::endl << std::endl;

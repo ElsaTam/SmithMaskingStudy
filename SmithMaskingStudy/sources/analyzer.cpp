@@ -6,6 +6,7 @@
 #include "utils/math/math.h"
 #include "utils/math/random.h"
 #include "utils/params.h"
+#include "utils/paths.h"
 #include "tools/logger.h"
 #include "tools/plotsGrapher.h"
 #include "HDFs/HeightsDiscrete.hpp"
@@ -217,18 +218,6 @@ std::unique_ptr<MicrofacetDistribution> Analyzer::getTheoricalNDF() const
     }
 }
 
-std::string Analyzer::getFolder(const std::string& root) const
-{
-    std::string folder = Parameters::userParams.pathParams.outputsFolder + root + "subd" + std::to_string(mesh->subdivisions()) + "/";
-    struct stat sb;
-    if (stat(folder.c_str(), &sb) == 0)
-        return folder;
-    else {
-        Console::err << "Folder " << folder << " does not exist." << std::endl;
-        exit(1);
-    }
-}
-
 scal Analyzer::partial_error(scal ref, scal estimation) const
 {
     return 2.f * abs(ref - estimation) / (ref + estimation); // since G1 > 0, no need for [abs() + abs()] at the denominator
@@ -251,8 +240,9 @@ void Analyzer::G1()
     std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
 
     // Init csv writer to store results
-    csv::CSVWriter* writer_rc    = new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_G1-rc.csv");
-    csv::CSVWriter* writer_smith = new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_G1-smith.csv");
+    int res = mesh->subdivisions();
+    csv::CSVWriter* writer_rc    = new csv::CSVWriter(Path::tabulationG1_rc(mesh->name, res));
+    csv::CSVWriter* writer_smith = new csv::CSVWriter(Path::tabulationG1_smith(mesh->name, res));
     // Write first row (theta)
     writeTheta(*writer_rc, false);
     writeTheta(*writer_smith, false);
@@ -307,7 +297,7 @@ void Analyzer::G1()
         writer_smith->writeRow(vector_g1_smith);
 
         // Plot 2D graph
-        PlotsGrapher::plot(getFolder("G1/2D/") + mesh->name + "_" + std::to_string(phi) + ".png", pts_theta, { pts_G1_rc, pts_G1_smith }, { "Ray casting", "Smith"});
+        PlotsGrapher::plot(Path::G1_2D_Folder(res) + mesh->name + "_" + std::to_string(phi) + ".png", pts_theta, {pts_G1_rc, pts_G1_smith}, {"Ray casting", "Smith"});
     }
 
     // Close csv writers
@@ -317,12 +307,12 @@ void Analyzer::G1()
     delete writer_smith;
 
     // Plot 3D graph
-    PlotsGrapher::splot     (getFolder("G1/3D/") + mesh->name + "_RC.png" ,                pts_rc);
-    PlotsGrapher::cmplot    (getFolder("G1/3D/") + mesh->name + "_RC_colormap.png",        col_rc);
-    PlotsGrapher::splot     (getFolder("G1/3D/") + mesh->name + "_Smith.png",              pts_smith);
-    PlotsGrapher::cmplot    (getFolder("G1/3D/") + mesh->name + "_Smith_colormap.png",     col_smith);
-    PlotsGrapher::splotDiff (getFolder("G1/3D/") + mesh->name + "_ashikhmin_diff",         pts_diff);
-    PlotsGrapher::cmplotDiff(getFolder("G1/3D/") + mesh->name + "_ashikhmin_colormap.png", col_diff, "magma");
+    PlotsGrapher::splot     (Path::G1_3D_Folder(res) + mesh->name + "_RC.png" ,                pts_rc);
+    PlotsGrapher::cmplot    (Path::G1_3D_Folder(res) + mesh->name + "_RC_colormap.png",        col_rc);
+    PlotsGrapher::splot     (Path::G1_3D_Folder(res) + mesh->name + "_Smith.png",              pts_smith);
+    PlotsGrapher::cmplot    (Path::G1_3D_Folder(res) + mesh->name + "_Smith_colormap.png",     col_smith);
+    PlotsGrapher::splotDiff (Path::G1_3D_Folder(res) + mesh->name + "_ashikhmin_diff",         pts_diff);
+    PlotsGrapher::cmplotDiff(Path::G1_3D_Folder(res) + mesh->name + "_ashikhmin_colormap.png", col_diff, "magma");
 
     // Finalize error computation
     SMAPE = normalize_error(SMAPE, D.nPhi * D.nTheta);
@@ -343,6 +333,8 @@ void Analyzer::GAF()
     // Create the discrete NDF
     std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
 
+    // Mesh resolution
+    int res = mesh->subdivisions();
 
     for (int i1 = 0; i1 < DIn.nPhi; ++i1) {
         scal phiIn = DIn.phiStart + i1 * DIn.phiRange / (scal)DIn.nPhi;
@@ -351,8 +343,8 @@ void Analyzer::GAF()
             scal thetaIn = DIn.thetaStart + j1 * DIn.thetaRange / (scal)DIn.nTheta;
 
             // Init csv writer to store results
-            csv::CSVWriter* writer_rc = new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_G1-rc.csv");
-            csv::CSVWriter* writer_smith = new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_G1-smith.csv");
+            csv::CSVWriter* writer_rc = new csv::CSVWriter(Path::tabulationG1_rc(mesh->name, res));
+            csv::CSVWriter* writer_smith = new csv::CSVWriter(Path::tabulationG1_smith(mesh->name, res));
             // Write first row (theta)
             writeTheta(*writer_rc, false);
             writeTheta(*writer_smith, false);
@@ -407,7 +399,7 @@ void Analyzer::GAF()
                 writer_smith->writeRow(vector_g1_smith);
 
                 // plot a graph for an ingoing direction, an outgoing phi and N outgoing theta
-                std::string folderDir = getFolder("GAF/2D/") + "phi_" + std::to_string(phiIn) + "_theta_" + std::to_string(thetaIn) + "/";
+                std::string folderDir = Path::GAF_2D_Folder(res, phiIn, thetaIn);
                 CreateDirectoryA(folderDir.c_str(), NULL);
                 PlotsGrapher::plot(folderDir + mesh->name + "_" + std::to_string(phiOut) + ".png", pts_theta, { pts_G1_rc, pts_G1_smith }, { });
             }
@@ -419,7 +411,7 @@ void Analyzer::GAF()
             delete writer_smith;
 
             // Plot 3D graph
-            std::string folderDir = getFolder("GAF/3D/") + "phi_" + std::to_string(phiIn) + "_theta_" + std::to_string(thetaIn) + "/";
+            std::string folderDir = Path::GAF_3D_Folder(res, phiIn, thetaIn);
             CreateDirectoryA(folderDir.c_str(), NULL);
             PlotsGrapher::splot     (folderDir + mesh->name + "_RC.png",                 pts_rc);
             PlotsGrapher::cmplot    (folderDir + mesh->name + "_RC_colormap.png",        col_rc);
@@ -544,21 +536,24 @@ void Analyzer::tabulate(bool D, bool G1_Ashikhmin, bool G1_RT)
     // Create the discrete NDF
     Discrete* NDF = (D || G1_Ashikhmin) ? new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage) : nullptr;
 
+    // Mesh resolution
+    int res = mesh->subdivisions();
+
     std::vector<std::string> filenames;
     std::vector<scal(*)(void*, scal, scal, scal, scal)> functions;
     std::vector<void*> contexts;
     if (D) {
-        filenames.push_back(getFolder("tabulations/") + mesh->name + "_D.csv");
+        filenames.push_back(Path::tabulationD(mesh->name, res));
         functions.push_back(&forwarderDistribD);
         contexts.push_back(NDF);
     }
     if (G1_Ashikhmin) {
-        filenames.push_back(getFolder("tabulations/") + mesh->name + "_G1-ashikhmin.csv");
+        filenames.push_back(Path::tabulationG1_smith(mesh->name, res));
         functions.push_back(&forwarderDistribG1);
         contexts.push_back(NDF);
     }
     if (G1_RT) {
-        filenames.push_back(getFolder("tabulations/") + mesh->name + "_G1-rt.csv");
+        filenames.push_back(Path::tabulationG1_rc(mesh->name, res));
         functions.push_back(&forwarderRendererG1);
         contexts.push_back(optixRenderer);
     }
@@ -591,6 +586,9 @@ void Analyzer::tabulateGAF_RT()
     params["programType"] = ProgramType::GAF;
     optixRenderer->setLaunchParams(params);
 
+    // Mesh resolution
+    int res = mesh->subdivisions();
+
     const scal phiStart = -m_pi, phiEnd = m_pi;   // phiEnd excluded
     const scal thetaStart = 0, thetaEnd = m_pi_2 - 0.001; // thetaEnd included
     const size_t nPhi = 16, nTheta = 30;
@@ -603,7 +601,7 @@ void Analyzer::tabulateGAF_RT()
         for (int j = 0; j < nTheta; ++j) {
             scal thetaIn = thetaStart + j * thetaStep; // [0, ..., ..., ... ], pi/2
             tabulateFunctions(
-                { getFolder("tabulations/") + mesh->name + "_wi-" + std::to_string(thetaIn) + "-" + std::to_string(phiIn) + "_GAF.csv" },
+                { Path::tabulationGAF_rc(mesh->name, phiIn, thetaIn, res) },
                 { &forwarderRendererGAF },
                 { optixRenderer },
                 phiIn, thetaIn);
@@ -623,7 +621,7 @@ void Analyzer::ambientOcclusion()
 {
     GPU_ENTER
 
-    optixRenderer->render(getFolder("ambient_occlusion/") + mesh->name + ".png");
+    optixRenderer->render(Path::ambientOcclusionImg(mesh->name, mesh->subdivisions()));
 
     EXIT
 }
@@ -695,7 +693,7 @@ void Analyzer::sets()
             params["colorsId"] = colorsId;
             optixRenderer->setLaunchParams(params);
 
-            optixRenderer->render(Parameters::userParams.pathParams.outputsFolder + mesh->name + "_" + std::to_string(K) + "_clusters.png");
+            optixRenderer->render(Path::clusterImg(mesh->name, K));
         }
 
     EXIT
@@ -747,7 +745,7 @@ void Analyzer::statistics(bool computeError)
     GPU_ENTER
     scal E = computeError ? error() : 0.f;
     
-    csv::CSVWriter* writer = new csv::CSVWriter(getFolder("statistics/") + "statistics/heights_and_thetas.csv", std::ios_base::app);
+    csv::CSVWriter* writer = new csv::CSVWriter(Path::statisticsFile(mesh->subdivisions()), std::ios_base::app);
 
     Console::out << Console::timeStamp << "Computing statistics..." << std::endl;
     StatisticsTool stats(mesh, E);
@@ -788,17 +786,18 @@ void Analyzer::fullPipeline()
     std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
     
     // Create CSV writers
-    csv::CSVWriter* distributionWriter = new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_D.csv");
-    csv::CSVWriter* G1AshikhminWriter = new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_G1-ashikhmin.csv");
-    csv::CSVWriter* G1RTWriter = render ? new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_G1-rt.csv") : new csv::CSVWriter();
-    csv::CSVWriter* errorWriter = render ? new csv::CSVWriter(getFolder("tabulations/") + mesh->name + "_Error.csv") : new csv::CSVWriter();
-    csv::CSVWriter* statWriter = new csv::CSVWriter(Parameters::userParams.pathParams.outputsFolder + "statistics/data_HR.csv", std::ios_base::app);
+    int res = mesh->subdivisions();
+    csv::CSVWriter* writer_distrib = new csv::CSVWriter(Path::tabulationD(mesh->name, res));
+    csv::CSVWriter* writer_smith = new csv::CSVWriter(Path::tabulationG1_smith(mesh->name, res));
+    csv::CSVWriter* writer_rc = render ? new csv::CSVWriter(Path::tabulationG1_rc(mesh->name, res)) : new csv::CSVWriter();
+    csv::CSVWriter* writer_error = render ? new csv::CSVWriter(Path::tabulationError(mesh->name, res)) : new csv::CSVWriter();
+    csv::CSVWriter* writer_stats = new csv::CSVWriter(Path::statisticsFile(res), std::ios_base::app);
 
     // Write first row (theta)
-    writeTheta(*distributionWriter, true);
-    writeTheta(*G1AshikhminWriter, false);
-    writeTheta(*G1RTWriter, false);
-    writeTheta(*errorWriter, false);
+    writeTheta(*writer_distrib, true);
+    writeTheta(*writer_smith, false);
+    writeTheta(*writer_rc, false);
+    writeTheta(*writer_error, false);
 
     Console::out << Console::timeStamp << "Analyzer computing G1s..." << std::endl;
 
@@ -854,10 +853,10 @@ void Analyzer::fullPipeline()
         }
 
         // Write rows
-        distributionWriter->writeRow(vector_d);
-        G1AshikhminWriter->writeRow(vector_g1_ashikhmin);
-        G1RTWriter->writeRow(vector_g1_rt);
-        errorWriter->writeRow(vector_error);
+        writer_distrib->writeRow(vector_d);
+        writer_smith->writeRow(vector_g1_ashikhmin);
+        writer_rc->writeRow(vector_g1_rt);
+        writer_error->writeRow(vector_error);
 
         if (Parameters::userParams.outLevel >= OutLevel::INFO) {
             Console::light << Console::timePad << Console::indent;
@@ -878,22 +877,22 @@ void Analyzer::fullPipeline()
     StatisticsTool stats(mesh, E);
 
     Console::out << Console::timePad << "Writing statistics..." << std::endl;
-    if (statWriter->numberOfLines() == 0) stats.CSVHeader(statWriter);
-    stats.toCSV(statWriter);
+    if (writer_stats->numberOfLines() == 0) stats.CSVHeader(writer_stats);
+    stats.toCSV(writer_stats);
 
-    Console::succ << Console::timePad << "Statistics append in " << statWriter->getFilename() << std::endl;
+    Console::succ << Console::timePad << "Statistics append in " << writer_stats->getFilename() << std::endl;
 
-    distributionWriter->close();
-    G1AshikhminWriter->close();
-    G1RTWriter->close();
-    errorWriter->close();
-    statWriter->close();
+    writer_distrib->close();
+    writer_smith->close();
+    writer_rc->close();
+    writer_error->close();
+    writer_stats->close();
 
-    delete distributionWriter;
-    delete G1AshikhminWriter;
-    delete G1RTWriter;
-    delete errorWriter;
-    delete statWriter;
+    delete writer_distrib;
+    delete writer_smith;
+    delete writer_rc;
+    delete writer_error;
+    delete writer_stats;
 
     EXIT
 }

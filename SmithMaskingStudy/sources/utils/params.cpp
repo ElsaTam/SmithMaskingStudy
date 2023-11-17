@@ -369,6 +369,19 @@ PathParams Parameters::createPathParamsForHF(jParser::jValue jValue) const
 		pathParams.outputsFolder = jValue["outputsFolder"].as_string();
 	}
 
+	// Gnuplot executable
+	if (jValue.contains("gnuplotPath") && jValue["gnuplotPath"].as_string().size() > 0) {
+		pathParams.gnuplotPath = jValue["gnuplotPath"].as_string();
+	}
+	else {
+		pathParams.gnuplotPath = "gnuplot";
+	}
+
+	// Cuda source
+	if (jValue.contains("ptxFile")) {
+		pathParams.ptxFile = jValue["ptxFile"].as_string();
+	}
+
 	return pathParams;
 }
 

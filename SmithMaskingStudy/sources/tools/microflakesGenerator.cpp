@@ -11,7 +11,7 @@
 
 MicroflakesGenerator::MicroflakesGenerator(const std::string& hfPath)
 {
-	if (!Path::fileExists(hfPath))
+	if (!Path::exists(hfPath))
 	{
 		Console::err << Console::timePad << "File not found: " << hfPath << std::endl;
 	}
