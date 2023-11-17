@@ -44,16 +44,16 @@ Analyzer::Analyzer(TriangleMesh* _mesh, bool useGPU)
     DIn.phiRange   = Parameters::userParams.directionInParams.phiEnd - DIn.phiStart;
     DIn.thetaStart = Parameters::userParams.directionInParams.thetaStart;
     DIn.thetaRange = Parameters::userParams.directionInParams.thetaEnd - DIn.thetaStart;
-    DIn.nPhi       = Parameters::userParams.directionInParams.nAzimuthSamples;
-    DIn.nTheta     = Parameters::userParams.directionInParams.nElevationSamples;
+    DIn.nPhi       = Parameters::userParams.directionInParams.nPhiSamples;
+    DIn.nTheta     = Parameters::userParams.directionInParams.nThetaSamples;
 
     DOut = {};
     DOut.phiStart   = Parameters::userParams.directionOutParams.phiStart;
     DOut.phiRange   = Parameters::userParams.directionOutParams.phiEnd - DOut.phiStart;
     DOut.thetaStart = Parameters::userParams.directionOutParams.thetaStart;
     DOut.thetaRange = Parameters::userParams.directionOutParams.thetaEnd - DOut.thetaStart;
-    DOut.nPhi       = Parameters::userParams.directionOutParams.nAzimuthSamples;
-    DOut.nTheta     = Parameters::userParams.directionOutParams.nElevationSamples;
+    DOut.nPhi       = Parameters::userParams.directionOutParams.nPhiSamples;
+    DOut.nTheta     = Parameters::userParams.directionOutParams.nThetaSamples;
 
     D = DOut;
 
@@ -117,10 +117,10 @@ void Analyzer::logRenderingInfo() const
     {
     case Method::G1:
     case Method::FULL_PIPELINE:
-        LOG_MESSAGE("nPhi=" + std::to_string(Parameters::userParams.directionOutParams.nAzimuthSamples)
+        LOG_MESSAGE("nPhi=" + std::to_string(Parameters::userParams.directionOutParams.nPhiSamples)
             + ", phiStart=" + std::to_string(Parameters::userParams.directionOutParams.phiStart)
             + ", phiEnd=" + std::to_string(Parameters::userParams.directionOutParams.phiEnd));
-        LOG_MESSAGE("nTheta=" + std::to_string(Parameters::userParams.directionOutParams.nElevationSamples)
+        LOG_MESSAGE("nTheta=" + std::to_string(Parameters::userParams.directionOutParams.nThetaSamples)
             + ", thetaStart=" + std::to_string(Parameters::userParams.directionOutParams.thetaStart)
             + ", thetaEnd=" + std::to_string(Parameters::userParams.directionOutParams.thetaEnd));
         break;
@@ -135,17 +135,17 @@ void Analyzer::logRenderingInfo() const
         break;
 
     case Method::GAF:
-    case Method::STATISTICS:
-        LOG_MESSAGE("IN_nPhi=" + std::to_string(Parameters::userParams.directionInParams.nAzimuthSamples)
+    case Method::FEATURES:
+        LOG_MESSAGE("IN_nPhi=" + std::to_string(Parameters::userParams.directionInParams.nPhiSamples)
             + ", IN_phiStart=" + std::to_string(Parameters::userParams.directionInParams.phiStart)
             + ", IN_phiEnd=" + std::to_string(Parameters::userParams.directionInParams.phiEnd));
-        LOG_MESSAGE("IN_nTheta=" + std::to_string(Parameters::userParams.directionInParams.nElevationSamples)
+        LOG_MESSAGE("IN_nTheta=" + std::to_string(Parameters::userParams.directionInParams.nThetaSamples)
             + ", IN_thetaStart=" + std::to_string(Parameters::userParams.directionInParams.thetaStart)
             + ", IN_thetaEnd=" + std::to_string(Parameters::userParams.directionInParams.thetaEnd));
-        LOG_MESSAGE("OUT_nPhi=" + std::to_string(Parameters::userParams.directionOutParams.nAzimuthSamples)
+        LOG_MESSAGE("OUT_nPhi=" + std::to_string(Parameters::userParams.directionOutParams.nPhiSamples)
             + ", OUT_phiStart=" + std::to_string(Parameters::userParams.directionOutParams.phiStart)
             + ", OUT_phiEnd=" + std::to_string(Parameters::userParams.directionOutParams.phiEnd));
-        LOG_MESSAGE("OUT_nTheta=" + std::to_string(Parameters::userParams.directionOutParams.nElevationSamples)
+        LOG_MESSAGE("OUT_nTheta=" + std::to_string(Parameters::userParams.directionOutParams.nThetaSamples)
             + ", OUT_thetaStart=" + std::to_string(Parameters::userParams.directionOutParams.thetaStart)
             + ", OUT_thetaEnd=" + std::to_string(Parameters::userParams.directionOutParams.thetaEnd));
         break;
@@ -167,6 +167,7 @@ void Analyzer::logRenderingInfo() const
 // ------------------------------------------------------------------------- //
 
 
+/* // Old code, keep in case I use it again
 std::unique_ptr<MicrofacetDistribution> Analyzer::getTheoricalNDF() const
 {
     vec2sc alpha = Parameters::userParams.ndfParams.alpha;
@@ -217,6 +218,7 @@ std::unique_ptr<MicrofacetDistribution> Analyzer::getTheoricalNDF() const
         return nullptr;
     }
 }
+*/
 
 scal Analyzer::partial_error(scal ref, scal estimation) const
 {
@@ -736,7 +738,7 @@ scal Analyzer::error()
 
 
 // ------------------------------------------------------------------------- //
-// --------------------------      STATISTICS      ------------------------- //
+// --------------------------      FEATURES      ------------------------- //
 // ------------------------------------------------------------------------- //
 
 

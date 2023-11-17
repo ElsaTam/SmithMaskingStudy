@@ -7,6 +7,7 @@
 #include "utils/console.h"
 #include "utils/params.h"
 #include "utils/paths.h"
+#include "magic_enum.hpp"
 #include <filesystem>
 
 void help() {
@@ -33,14 +34,14 @@ void example() {
     std::cout << "        \"directionParams\" : {" << std::endl;
     std::cout << "            \"phiStart\": 0," << std::endl;
     std::cout << "            \"phiEnd\" : 3.141593," << std::endl;
-    std::cout << "            \"nAzimuthSamples\" : 1," << std::endl;
+    std::cout << "            \"nPhiSamples\" : 1," << std::endl;
     std::cout << "            \"thetaStart\" : -1.570796," << std::endl;
     std::cout << "            \"thetaEnd\" : 1.570796," << std::endl;
-    std::cout << "            \"nElevationSamples\" : 10" << std::endl;
+    std::cout << "            \"nThetaSamples\" : 10" << std::endl;
     std::cout << "        }," << std::endl;
     std::cout << "        \"sideEffectParams\": {" << std::endl;
     std::cout << "            \"borderPercentage\": 0.5," << std::endl;
-    std::cout << "            \"directional\" : true" << std::endl;
+    std::cout << "            \"BBox\" : true" << std::endl;
     std::cout << "        }," << std::endl;
     std::cout << "        \"renderingParams\" : {" << std::endl;
     std::cout << "            \"renderSize\": [1000, 1000] ," << std::endl;
@@ -77,10 +78,14 @@ void cleanDirectory(const std::string& path)
 
 void run(const UserParams& params) {
 
+    Console::info << Console::line << Console::line;
+    Console::info << "Method " << std::string(magic_enum::enum_name(Parameters::userParams.method)) << std::endl;
+    Console::info << Console::line << std::endl;
+
     bool useGPU = (params.method == Method::G1)
         || (params.method == Method::GAF)
         //|| (params.method == Method::TABULATION)
-        //|| (params.method == Method::STATISTICS)
+        //|| (params.method == Method::FEATURES)
         || (params.method == Method::AMBIENT_OCCLUSION)
         || (params.method == Method::GENERATE_MICROFLAKES);
 
@@ -92,9 +97,10 @@ void run(const UserParams& params) {
         // for each resolution
         for (int res : Path::resolutions())
         {
-            Console::info << Console::line << Console::line;
-            Console::info << surfName << ", " << res << " subdivisions" << std::endl;
-            Console::info << Console::line << std::endl;
+            Console::out << Console::shortline;
+            Console::out << surfName << ", " << res << " subdivisions" << std::endl;
+            Console::out << Console::shortline << std::endl;
+            continue;
 
             try {
                 TriangleMesh* mesh;
@@ -126,7 +132,7 @@ void run(const UserParams& params) {
                 case Method::AMBIENT_OCCLUSION:
                     analyzer.ambientOcclusion();
                     break;
-                case Method::STATISTICS:
+                case Method::FEATURES:
                     analyzer.statistics(true);
                     break;
                 case Method::GENERATE_MICROFLAKES:

@@ -56,7 +56,6 @@ struct LaunchParams
         vec3sc directionOut;
         size_t* targetedTriangles;
         size_t numberOfTargetedTriangles{ 0 };
-        scal tMax;
         bool useSmooth;
     } visibility;
 
@@ -68,7 +67,7 @@ struct LaunchParams
 
     struct {
         float borderPercentage;
-        bool directional;
+        bool BBox;
     } sideEffect;
 
     OptixTraversableHandle traversable;

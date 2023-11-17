@@ -32,7 +32,7 @@ private:
 	void logRenderingInfo() const;
 
 	// utils
-	std::unique_ptr<MicrofacetDistribution> getTheoricalNDF() const;
+	//std::unique_ptr<MicrofacetDistribution> getTheoricalNDF() const;
 	scal partial_error(scal ref, scal estimation) const;
 	scal normalize_error(scal sum_E, int N) const;
 

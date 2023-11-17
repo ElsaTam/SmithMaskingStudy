@@ -23,10 +23,10 @@ bool operator==(const DirectionParams& lhs, const DirectionParams& rhs)
 {
 	if (lhs.phiStart != rhs.phiStart) return false;
 	if (lhs.phiEnd != rhs.phiEnd) return false;
-	if (lhs.nAzimuthSamples != rhs.nAzimuthSamples) return false;
+	if (lhs.nPhiSamples != rhs.nPhiSamples) return false;
 	if (lhs.thetaStart != rhs.thetaStart) return false;
 	if (lhs.thetaEnd != rhs.thetaEnd) return false;
-	if (lhs.nElevationSamples != rhs.nElevationSamples) return false;
+	if (lhs.nThetaSamples != rhs.nThetaSamples) return false;
 	return true;
 }
 
@@ -38,7 +38,7 @@ bool operator!=(const DirectionParams& lhs, const DirectionParams& rhs)
 bool operator==(const SideEffectParams& lhs, const SideEffectParams& rhs)
 {
 	if (lhs.borderPercentage != rhs.borderPercentage) return false;
-	if (lhs.directional != rhs.directional) return false;
+	if (lhs.BBox != rhs.BBox) return false;
 	return true;
 }
 
@@ -52,7 +52,6 @@ bool operator==(const RenderingParams& lhs, const RenderingParams& rhs)
 	if (lhs.renderSize != rhs.renderSize) return false;
 	if (lhs.nPixelSamples != rhs.nPixelSamples) return false;
 	if (lhs.createPicture != rhs.createPicture) return false;
-	if (lhs.tMax != rhs.tMax) return false;
 	if (lhs.useSmooth != rhs.useSmooth) return false;
 	return true;
 }
@@ -76,31 +75,6 @@ bool operator==(const UserParams& lhs, const UserParams& rhs)
 }
 
 bool operator!=(const UserParams& lhs, const UserParams& rhs)
-{
-	return !(lhs == rhs);
-}
-
-bool operator==(const NDFParams& lhs, const NDFParams& rhs)
-{
-	if (lhs.profil != rhs.profil) return false;
-	if (lhs.alpha != rhs.alpha) return false;
-	return true;
-}
-
-bool operator!=(const NDFParams& lhs, const NDFParams& rhs)
-{
-	return !(lhs == rhs);
-}
-
-bool operator==(const BinaryFilesParams& lhs, const BinaryFilesParams& rhs)
-{
-	if (lhs.readFromBinary != rhs.readFromBinary) return false;
-	if (lhs.createBinary != rhs.createBinary) return false;
-	if (lhs.overwriteBinary != rhs.overwriteBinary) return false;
-	return true;
-}
-
-bool operator!=(const BinaryFilesParams& lhs, const BinaryFilesParams& rhs)
 {
 	return !(lhs == rhs);
 }
@@ -139,10 +113,11 @@ void Parameters::parse(const std::string& path)
 
 	std::string str = "";
 	std::string tmp;
-	while (std::getline(in, tmp)) str += tmp; // we stock the whole file in a single string
+	while (std::getline(in, tmp))
+		str += tmp; // we stock the whole file in a single string
 	in.close();
 
-	jParser::jValue allUserParams = jParser::parser::parse(str);
+	jParser::jValue allUserParams = jParser::parser::parse(str)["userParams"];
 	// {
 	//     "userParams" : {
 	// 	       ...
@@ -162,9 +137,9 @@ void Parameters::parse(const std::string& path)
 //     "outLevel" : "TRACE",
 //     "log" : false,
 //     "pathParams": {
-//      	"objNames": ["PerTex/001.obj"] ,
-//     		"objMin" : 1,
-//     		"objMax" : 10,
+//      	"surfNames": ["PerTex/001.obj"] ,
+//     		"surfMin" : 1,
+//     		"surfMax" : 10,
 //     		"inputsFolder" : "../../inputs/",
 //     		"outputsFolder" : "../../outputs/"
 //     },
@@ -190,7 +165,7 @@ UserParams Parameters::createUserParams(jParser::jValue jValue) const
 		else if (methodStr.compare("G1") == 0) userParams.method = Method::G1;
 		else if (methodStr.compare("D_TABULATION") == 0) userParams.method = Method::D_TABULATION;
 		else if (methodStr.compare("AMBIENT_OCCLUSION") == 0) userParams.method = Method::AMBIENT_OCCLUSION;
-		else if (methodStr.compare("STATISTICS") == 0) userParams.method = Method::STATISTICS;
+		else if (methodStr.compare("FEATURES") == 0) userParams.method = Method::FEATURES;
 		else if (methodStr.compare("GENERATE_MICROFLAKES") == 0) userParams.method = Method::GENERATE_MICROFLAKES;
 		else if (methodStr.compare("FULL_PIPELINE") == 0) userParams.method = Method::FULL_PIPELINE;
 	}
@@ -239,24 +214,13 @@ UserParams Parameters::createUserParams(jParser::jValue jValue) const
 		userParams.renderingParams = createRenderingParams(jValue["renderingParams"]);
 	}
 
-	// NDF Parameters
-	if (jValue.contains("ndfParams")) {
-		userParams.ndfParams = createNDFParams(jValue["ndfParams"]);
-	}
-
-	// Binary Files Parameters
-	if (jValue.contains("binaryFilesParams")) {
-		userParams.binaryFilesParams = createBinaryFilesParams(jValue["binaryFilesParams"]);
-	}
-
-
 	return userParams;
 }
 
 //  {
-//  	"objNames": ["PerTex/001.obj"] ,
-//      "objMin" : 1,
-//  	"objMax" : 10,
+//  	"surfNames": ["PerTex/001.obj"] ,
+//      "surfMin" : 1,
+//  	"surfMax" : 10,
 //  	"inputsFolder" : "../../inputs/",
 //  	"outputsFolder" : "../../outputs/"
 //  }
@@ -264,7 +228,7 @@ PathParams Parameters::createPathParamsForOBJ(jParser::jValue jValue) const
 {
 	PathParams pathParams;
 
-	if (jValue.contains("objNames") || (jValue.contains("objMin") && jValue.contains("objMax")))
+	if (jValue.contains("surfNames") || (jValue.contains("surfMin") && jValue.contains("surfMax")))
 		pathParams.surfNames.clear();
 
 	// Mesh resolution
@@ -278,16 +242,16 @@ PathParams Parameters::createPathParamsForOBJ(jParser::jValue jValue) const
 		pathParams.resolutions.push_back(jValue["res"].as_int());
 	}
 
-	// obj names
-	if (jValue.contains("objNames")) {
-		for (int i = 0; i < jValue["objNames"].size(); ++i) {
-			pathParams.surfNames.push_back(jValue["objNames"][i].as_string());
+	// surface names
+	if (jValue.contains("surfNames")) {
+		for (int i = 0; i < jValue["surfNames"].size(); ++i) {
+			pathParams.surfNames.push_back(jValue["surfNames"][i].as_string());
 		}
 	}
 
 	// PerTex range
-	if (jValue.contains("objMin") && jValue.contains("objMax")) {
-		for (int i = jValue["objMin"].as_int(); i <= jValue["objMax"].as_int(); ++i) {
+	if (jValue.contains("surfMin") && jValue.contains("surfMax")) {
+		for (int i = jValue["surfMin"].as_int(); i <= jValue["surfMax"].as_int(); ++i) {
 		    std::ostringstream oss;
 		    oss << std::setfill('0') << std::setw(3) << i;
 			pathParams.surfNames.push_back("PerTex/" + oss.str());
@@ -295,9 +259,6 @@ PathParams Parameters::createPathParamsForOBJ(jParser::jValue jValue) const
 	}
 
 	// Folders
-	if (jValue.contains("resetOutput")) {
-		pathParams.resetOutput = jValue["resetOutput"].as_bool();
-	}
 	if (jValue.contains("objFolder")) {
 		pathParams.objFolder = jValue["objFolder"].as_string();
 	}
@@ -326,19 +287,19 @@ PathParams Parameters::createPathParamsForHF(jParser::jValue jValue) const
 {
 	PathParams pathParams;
 
-	if (jValue.contains("objNames") || (jValue.contains("objMin") && jValue.contains("objMax")))
+	if (jValue.contains("surfNames") || (jValue.contains("surfMin") && jValue.contains("surfMax")))
 		pathParams.surfNames.clear();
 
 	// hf names
-	if (jValue.contains("objNames")) {
-		for (int i = 0; i < jValue["objNames"].size(); ++i) {
-			pathParams.surfNames.push_back(jValue["objNames"][i].as_string());
+	if (jValue.contains("surfNames")) {
+		for (int i = 0; i < jValue["surfNames"].size(); ++i) {
+			pathParams.surfNames.push_back(jValue["surfNames"][i].as_string());
 		}
 	}
 
 	// PerTex range
-	if (jValue.contains("objMin") && jValue.contains("objMax")) {
-		for (int i = jValue["objMin"].as_int(); i <= jValue["objMax"].as_int(); ++i) {
+	if (jValue.contains("surfMin") && jValue.contains("surfMax")) {
+		for (int i = jValue["surfMin"].as_int(); i <= jValue["surfMax"].as_int(); ++i) {
 			std::ostringstream oss;
 			oss << std::setfill('0') << std::setw(3) << i;
 			pathParams.surfNames.push_back(oss.str());
@@ -388,10 +349,10 @@ PathParams Parameters::createPathParamsForHF(jParser::jValue jValue) const
 // {
 //     "phiStart" : 0,
 //     "phiEnd" : 3.141593,
-//     "nAzimuthSamples" : 1,
+//     "nPhiSamples" : 1,
 //     "thetaStart" : -1.570796,
 //     "thetaEnd" : 1.570796,
-//     "nElevationSamples" : 10
+//     "nThetaSamples" : 10
 // }
 DirectionParams Parameters::createDirectionParams(jParser::jValue jValue) const
 {
@@ -403,8 +364,8 @@ DirectionParams Parameters::createDirectionParams(jParser::jValue jValue) const
 	if (jValue.contains("phiEnd")) {
 		directionParams.phiEnd = jValue["phiEnd"].as_float();
 	}
-	if (jValue.contains("nAzimuthSamples")) {
-		directionParams.nAzimuthSamples = jValue["nAzimuthSamples"].as_int();
+	if (jValue.contains("nPhiSamples")) {
+		directionParams.nPhiSamples = jValue["nPhiSamples"].as_int();
 	}
 
 	if (jValue.contains("thetaStart")) {
@@ -413,8 +374,8 @@ DirectionParams Parameters::createDirectionParams(jParser::jValue jValue) const
 	if (jValue.contains("thetaEnd")) {
 		directionParams.thetaEnd = jValue["thetaEnd"].as_float();
 	}
-	if (jValue.contains("nElevationSamples")) {
-		directionParams.nElevationSamples = jValue["nElevationSamples"].as_int();
+	if (jValue.contains("nThetaSamples")) {
+		directionParams.nThetaSamples = jValue["nThetaSamples"].as_int();
 	}
 
 	return directionParams;
@@ -422,7 +383,7 @@ DirectionParams Parameters::createDirectionParams(jParser::jValue jValue) const
 
 // {
 // 	    "borderPercentage" : 0.5,
-// 		"directional" : true
+// 		"BBox" : true
 // }
 SideEffectParams Parameters::createSideEffectParams(jParser::jValue jValue) const
 {
@@ -431,8 +392,8 @@ SideEffectParams Parameters::createSideEffectParams(jParser::jValue jValue) cons
 	if (jValue.contains("borderPercentage")) {
 		sideEffectParams.borderPercentage = jValue["borderPercentage"].as_float();
 	}
-	if (jValue.contains("directional")) {
-		sideEffectParams.directional = jValue["directional"].as_bool();
+	if (jValue.contains("BBox")) {
+		sideEffectParams.BBox = jValue["BBox"].as_bool();
 	}
 
 	return sideEffectParams;
@@ -465,57 +426,6 @@ RenderingParams Parameters::createRenderingParams(jParser::jValue jValue) const
 
 	return renderingParams;
 }
-
-// {
-// 	   "profil" : "BECKMANN",
-//	   "findAlphaFromFileName" : true,
-// 	   "alpha" : [0.5, 0.5]
-// }
-NDFParams Parameters::createNDFParams(jParser::jValue jValue) const
-{
-	NDFParams ndfParams;
-
-	if (jValue.contains("profil")) {
-		const std::string profilStr = jValue["profil"].as_string();
-		if (profilStr.compare("BECKMANN") == 0) ndfParams.profil = MicrofacetProfil::BECKMANN;
-		else if (profilStr.compare("GGX") == 0) ndfParams.profil = MicrofacetProfil::GGX;
-	}
-	if (jValue.contains("findAlphaFromFileName")) {
-		ndfParams.findAlphaFromFileName = jValue["findAlphaFromFileName"].as_bool();
-	}
-	if (jValue.contains("alpha")) {
-		if (jValue["alpha"].size() == 2) {
-			ndfParams.alpha.x = jValue["alpha"][0].as_float();
-			ndfParams.alpha.y = jValue["alpha"][1].as_float();
-		}
-	}
-
-	return ndfParams;
-}
-
-// {
-// 	   "readFromBinary" : true,
-//	   "createBinary" : true,
-// 	   "overwrite_binary" : true
-// }
-BinaryFilesParams Parameters::createBinaryFilesParams(jParser::jValue jValue) const
-{
-	BinaryFilesParams binaryFilesParams;
-
-	if (jValue.contains("readFromBinary")) {
-		binaryFilesParams.readFromBinary = jValue["readFromBinary"].as_bool();
-	}
-	if (jValue.contains("createBinary")) {
-		binaryFilesParams.createBinary = jValue["createBinary"].as_bool();
-	}
-	if (jValue.contains("overwriteBinary")) {
-		binaryFilesParams.overwriteBinary = jValue["overwriteBinary"].as_bool();
-	}
-
-	return binaryFilesParams;
-}
-
-
 
 
 

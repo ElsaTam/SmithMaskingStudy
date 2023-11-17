@@ -92,14 +92,13 @@ void OptixRenderer::resize(const vec2i& newSize)
 void OptixRenderer::setUserParams()
 {
     // Visibility
-    launchParams.visibility.tMax = Parameters::userParams.renderingParams.tMax;
     launchParams.visibility.useSmooth = Parameters::userParams.renderingParams.useSmooth;
 
     // Program type
     switch (Parameters::userParams.method) {
     case Method::G1:
     case Method::GENERATE_MICROFLAKES:
-    case Method::STATISTICS:
+    case Method::FEATURES:
     case Method::FULL_PIPELINE:
         launchParams.camera.programType = ProgramType::G1;
         break;
@@ -241,8 +240,8 @@ void OptixRenderer::setLaunchParams(std::map<std::string, optionalParam> params)
         if (it->first == "borderPercentage") {
             launchParams.sideEffect.borderPercentage = std::get<scal>(it->second);
         }
-        else if (it->first == "directional") {
-            launchParams.sideEffect.directional = std::get<bool>(it->second);
+        else if (it->first == "BBox") {
+            launchParams.sideEffect.BBox = std::get<bool>(it->second);
         }
         else if (it->first == "targetedTriangles") {
             if (launchParams.visibility.numberOfTargetedTriangles > 0) {

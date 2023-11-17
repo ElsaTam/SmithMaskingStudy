@@ -841,22 +841,6 @@ TriangleMesh* createMesh(const std::string& objPath)
 {
     TriangleMesh* mesh;
 
-    const std::string binaryFile = objPath + ".bin";
-
-    // Read from binary file if it is requested (default) and if the file exists
-    if (Parameters::userParams.binaryFilesParams.readFromBinary)
-    {
-        // create and open an archive for input
-        std::ifstream inFile(binaryFile);
-        if (inFile) {
-            mesh = new TriangleMesh;
-            boost::archive::text_iarchive ia(inFile);
-            ia >> *mesh;
-            return mesh;
-        }
-        inFile.close();
-    }
-
     // Else, building from .obj file
     Console::out << Console::timeStamp << "Building triangle mesh..." << std::endl;
 
@@ -963,27 +947,6 @@ TriangleMesh* createMesh(const std::string& objPath)
     mesh->translate({ -(mesh->bounds.lower.x + mesh->bounds.upper.x) / (scal)2.,
                       -(mesh->bounds.lower.y + mesh->bounds.upper.y) / (scal)2.,
                        -mesh->bounds.lower.z });
-
-    // If requested, write in binary file
-    if (Parameters::userParams.binaryFilesParams.createBinary)
-    {
-        std::ifstream inFile(binaryFile);
-        if (!inFile.good() || Parameters::userParams.binaryFilesParams.overwriteBinary)
-        {
-            std::ofstream outFile(binaryFile);
-            //outFile.open(binaryFile, std::ios::out | std::ios::binary);
-            if (!outFile) {
-                Console::err << "Error in creating file " << binaryFile << std::endl;
-            }
-            else {
-                boost::archive::text_oarchive oa(outFile);
-                oa << *mesh;
-                Console::succ << "Obj saved into binary file " << binaryFile << std::endl;
-            }
-            outFile.close();
-        }
-        inFile.close();
-    }
 
     Console::out << *mesh << std::endl;
 

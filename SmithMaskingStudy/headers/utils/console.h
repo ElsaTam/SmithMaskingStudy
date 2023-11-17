@@ -78,6 +78,7 @@ namespace Console {
 	extern std::string timePad;
 
 	extern std::string line;
+	extern std::string shortline;
 	extern std::string indent;
 
 	std::string fixed_size(float value, int nCharacters);

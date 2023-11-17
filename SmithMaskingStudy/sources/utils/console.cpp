@@ -52,6 +52,7 @@ namespace Console {
 	std::string timePad(std::string(11, ' '));
 
 	std::string line(std::string(80, '-') + "\n");
+	std::string shortline(std::string(20, '-') + "\n");
 	std::string indent("|  ");
 
 	std::string fixed_size(float value, int nCharacters)

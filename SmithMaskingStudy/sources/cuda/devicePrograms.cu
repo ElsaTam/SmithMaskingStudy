@@ -180,7 +180,7 @@ extern "C" __global__ void __closesthit__radiance()
         surfPos + (scal)1e-3 * N,
         rayDir,
         (scal)0.0, // tmin
-        optixLaunchParams.visibility.tMax,  // tmax
+        (scal)1e20,  // tmax
         (scal)0.0,  // rayTime
         OptixVisibilityMask(255),
         flags,
@@ -190,7 +190,7 @@ extern "C" __global__ void __closesthit__radiance()
         u0, u1);
 
     // If the point is not visible, then there is no possible mistake: the surface is hiding it.
-    if (optixLaunchParams.sideEffect.directional && prd.visible)
+    if (optixLaunchParams.sideEffect.BBox && prd.visible)
     {
         vec3sc hit = AABBIntersection(sbtData.bounds, surfPos, -optixLaunchParams.visibility.directionOut);
         if (hit.z < sbtData.bounds.upper.z && hit.z > sbtData.bounds.lower.z) {
@@ -209,7 +209,7 @@ extern "C" __global__ void __closesthit__radiance()
             surfPos + (scal)1e-3 * N,
             rayDir,
             (scal)0.0, // tmin
-            optixLaunchParams.visibility.tMax,  // tmax
+            (scal)1e20,  // tmax
             (scal)0.0,  // rayTime
             OptixVisibilityMask(255),
             flags,
@@ -218,7 +218,7 @@ extern "C" __global__ void __closesthit__radiance()
             VISIBILITY_RAY_TYPE, // missSBTIndex 
             u0, u1);
 
-        if (optixLaunchParams.sideEffect.directional && prd.visible)
+        if (optixLaunchParams.sideEffect.BBox && prd.visible)
         {
             vec3sc hit = AABBIntersection(sbtData.bounds, surfPos, -optixLaunchParams.visibility.directionIn);
             if (hit.z < sbtData.bounds.upper.z && hit.z > sbtData.bounds.lower.z) {
@@ -229,7 +229,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
 }
 
-// closest hit program vor a directional ray launched from the surface,
+// closest hit program vor a BBox ray launched from the surface,
 // with a specified tMax.
 extern "C" __global__ void __closesthit__ambient_occlusion()
 {
