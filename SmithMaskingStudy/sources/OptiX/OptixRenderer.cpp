@@ -95,7 +95,7 @@ void OptixRenderer::setUserParams()
     launchParams.visibility.useSmooth = Parameters::userParams.renderingParams.useSmooth;
 
     // Program type
-    switch (Parameters::userParams.method) {
+    switch (Parameters::userParams.methodParams.method) {
     case Method::G1:
     case Method::GENERATE_MICROFLAKES:
     case Method::FEATURES:

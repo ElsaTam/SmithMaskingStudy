@@ -81,7 +81,8 @@ TriangleMesh* MicroflakesGenerator::createModel(const gdt::vec2i gridSize) const
 			gdt::vec3sc P = getPoint(coords);
 			gdt::vec3sc N = getSmoothNormal(coords);
 			Flake flake = createFlake(flakeSize, P, N);
-			//jiggleFlake(flake);
+			if (Parameters::userParams.methodParams.jiggleFlakes)
+				jiggleFlake(flake);
 			addFlake(flake, mesh);
 		}
 	}

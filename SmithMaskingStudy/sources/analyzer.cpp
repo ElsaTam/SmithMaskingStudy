@@ -113,7 +113,7 @@ void Analyzer::prepareGPU()
 
 void Analyzer::logRenderingInfo() const
 {
-    switch (Parameters::userParams.method)
+    switch (Parameters::userParams.methodParams.method)
     {
     case Method::G1:
     case Method::FULL_PIPELINE:
@@ -742,26 +742,26 @@ scal Analyzer::error()
 // ------------------------------------------------------------------------- //
 
 
-void Analyzer::statistics(bool computeError)
+void Analyzer::features()
 {
     GPU_ENTER
-    scal E = computeError ? error() : 0.f;
+    scal E = Parameters::userParams.methodParams.computeError ? error() : 0.f;
     
-    csv::CSVWriter* writer = new csv::CSVWriter(Path::statisticsFile(mesh->subdivisions()), std::ios_base::app);
+    csv::CSVWriter* writer = new csv::CSVWriter(Path::featuresFile(mesh->subdivisions()), std::ios_base::app);
 
-    Console::out << Console::timeStamp << "Computing statistics..." << std::endl;
+    Console::out << Console::timeStamp << "Computing features..." << std::endl;
     StatisticsTool stats(mesh, E);
 
     Console::out << std::endl;
     stats.print();
     Console::out << std::endl;
 
-    Console::out << Console::timePad << "Writing statistics..." << std::endl;
+    Console::out << Console::timePad << "Writing features..." << std::endl;
     if (writer->numberOfLines() == 0) stats.CSVHeader(writer);
     stats.toCSV(writer);
 
     Console::succ << Console::timePad
-        << "Statistics append in " << writer->getFilename() << std::endl;
+        << "Features append in " << writer->getFilename() << std::endl;
 
     EXIT
 }
@@ -793,7 +793,7 @@ void Analyzer::fullPipeline()
     csv::CSVWriter* writer_smith = new csv::CSVWriter(Path::tabulationG1_smith(mesh->name, res));
     csv::CSVWriter* writer_rc = render ? new csv::CSVWriter(Path::tabulationG1_rc(mesh->name, res)) : new csv::CSVWriter();
     csv::CSVWriter* writer_error = render ? new csv::CSVWriter(Path::tabulationError(mesh->name, res)) : new csv::CSVWriter();
-    csv::CSVWriter* writer_stats = new csv::CSVWriter(Path::statisticsFile(res), std::ios_base::app);
+    csv::CSVWriter* writer_stats = new csv::CSVWriter(Path::featuresFile(res), std::ios_base::app);
 
     // Write first row (theta)
     writeTheta(*writer_distrib, true);

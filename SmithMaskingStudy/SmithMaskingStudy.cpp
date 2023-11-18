@@ -20,35 +20,42 @@ void help() {
 
 void example() {
     std::cout << "{" << std::endl;
-    std::cout << "    \"userParams\": {" << std::endl;
-    std::cout << "        \"method\": \"GLOBAL_VISIBILITY\"," << std::endl;
-    std::cout << "        \"outLevel\" : \"TRACE\"," << std::endl;
-    std::cout << "        \"log\" : false," << std::endl;
-    std::cout << "        \"pathParams\": {" << std::endl;
-    std::cout << "            \"objNames\": [\"PerTex/001.obj\", \"PerTex/002.obj\"]," << std::endl;
-    std::cout << "            \"objMin\" : 3," << std::endl;
-    std::cout << "            \"objMax\" : 10," << std::endl;
-    std::cout << "            \"inputsFolder\" : \"../../inputs/\"," << std::endl;
-    std::cout << "            \"outputsFolder\" : \"../../outputs/\"" << std::endl;
-    std::cout << "        }," << std::endl;
-    std::cout << "        \"directionParams\" : {" << std::endl;
-    std::cout << "            \"phiStart\": 0," << std::endl;
-    std::cout << "            \"phiEnd\" : 3.141593," << std::endl;
-    std::cout << "            \"nPhiSamples\" : 1," << std::endl;
-    std::cout << "            \"thetaStart\" : -1.570796," << std::endl;
-    std::cout << "            \"thetaEnd\" : 1.570796," << std::endl;
-    std::cout << "            \"nThetaSamples\" : 10" << std::endl;
-    std::cout << "        }," << std::endl;
-    std::cout << "        \"sideEffectParams\": {" << std::endl;
-    std::cout << "            \"borderPercentage\": 0.5," << std::endl;
-    std::cout << "            \"BBox\" : true" << std::endl;
-    std::cout << "        }," << std::endl;
-    std::cout << "        \"renderingParams\" : {" << std::endl;
-    std::cout << "            \"renderSize\": [1000, 1000] ," << std::endl;
-    std::cout << "            \"nPixelSamples\" : 16," << std::endl;
-    std::cout << "            \"createPicture\" : false" << std::endl;
-    std::cout << "        }" << std::endl;
-    std::cout << "    }" << std::endl;
+    std::cout << "\t'userParams': [" << std::endl;
+    std::cout << "\t\t{" << std::endl;
+    std::cout << "\t\t\t'methodParams': {" << std::endl;
+    std::cout << "\t\t\t\t'name': 'G1'" << std::endl;
+    std::cout << "\t\t\t}," << std::endl;
+    std::cout << "\t\t\t'pathParams': {" << std::endl;
+    std::cout << "\t\t\t\t'objDir'     : 'path/to/obj/directory/'," << std::endl;
+    std::cout << "\t\t\t\t'outputsDir' : 'path/to/outputs/directory/'," << std::endl;
+    std::cout << "\t\t\t\t'surfNames'  : ['subpath/to/surfA.obj', 'subpath/to/surfB.obj']," << std::endl;
+    std::cout << "\t\t\t\t'surfMin'    : 1," << std::endl;
+    std::cout << "\t\t\t\t'surfMax'    : 10," << std::endl;
+    std::cout << "\t\t\t\t'resolutions': [8, 9, 10]," << std::endl;
+    std::cout << "\t\t\t\t'ptxFile'    : './sources/cuda/devicePrograms.cu.ptx'," << std::endl;
+    std::cout << "\t\t\t}," << std::endl;
+    std::cout << "\t\t\t'directionParams': {" << std::endl;
+    std::cout << "\t\t\t\t'phiStart'     : 0," << std::endl;
+    std::cout << "\t\t\t\t'phiEnd'       : 6.283185," << std::endl;
+    std::cout << "\t\t\t\t'nPhiSamples'  : 400," << std::endl;
+    std::cout << "\t\t\t\t'thetaStart'   : 0," << std::endl;
+    std::cout << "\t\t\t\t'thetaEnd'     : 1.570796," << std::endl;
+    std::cout << "\t\t\t\t'nThetaSamples': 100" << std::endl;
+    std::cout << "\t\t\t}," << std::endl;
+    std::cout << "\t\t\t'sideEffectParams': {" << std::endl;
+    std::cout << "\t\t\t\t'borderPercentage': 0.2," << std::endl;
+    std::cout << "\t\t\t\t'BBox'            : false" << std::endl;
+    std::cout << "\t\t\t}," << std::endl;
+    std::cout << "\t\t\t'renderingParams': {" << std::endl;
+    std::cout << "\t\t\t\t'renderSize'   : [1024, 1024]," << std::endl;
+    std::cout << "\t\t\t\t'nPixelSamples': 4," << std::endl;
+    std::cout << "\t\t\t\t'createPicture': false," << std::endl;;
+    std::cout << "\t\t\t\t'useSmooth'    : false" << std::endl;
+    std::cout << "\t\t\t}," << std::endl;
+    std::cout << "\t\t\t'outLevel': 'INFO'," << std::endl;
+    std::cout << "\t\t\t'log'     : false" << std::endl;
+    std::cout << "\t\t}" << std::endl;
+    std::cout << "\t]" << std::endl;
     std::cout << "}" << std::endl;
 }
 
@@ -79,15 +86,15 @@ void cleanDirectory(const std::string& path)
 void run(const UserParams& params) {
 
     Console::info << Console::line << Console::line;
-    Console::info << "Method " << std::string(magic_enum::enum_name(Parameters::userParams.method)) << std::endl;
+    Console::info << "Method " << std::string(magic_enum::enum_name(Parameters::userParams.methodParams.method)) << std::endl;
     Console::info << Console::line << std::endl;
 
-    bool useGPU = (params.method == Method::G1)
-        || (params.method == Method::GAF)
-        //|| (params.method == Method::TABULATION)
-        //|| (params.method == Method::FEATURES)
-        || (params.method == Method::AMBIENT_OCCLUSION)
-        || (params.method == Method::GENERATE_MICROFLAKES);
+    bool useGPU = (params.methodParams.method == Method::G1)
+        || (params.methodParams.method == Method::GAF)
+        //|| (params.methodParams.method == Method::TABULATION)
+        //|| (params.methodParams.method == Method::FEATURES)
+        || (params.methodParams.method == Method::AMBIENT_OCCLUSION)
+        || (params.methodParams.method == Method::GENERATE_MICROFLAKES);
 
     Analyzer analyzer(nullptr, useGPU);
 
@@ -104,7 +111,7 @@ void run(const UserParams& params) {
 
             try {
                 TriangleMesh* mesh;
-                if (params.method == Method::GENERATE_MICROFLAKES) {
+                if (params.methodParams.method == Method::GENERATE_MICROFLAKES) {
                     LOG_NAME(Path::hfFolder(), surfName);
                     MicroflakesGenerator generator(Path::hfFile(surfName));
                     int size = pow(2, res);
@@ -119,7 +126,7 @@ void run(const UserParams& params) {
 
                 analyzer.setGeo(mesh);
 
-                switch (params.method) {
+                switch (params.methodParams.method) {
                 case Method::G1:
                     analyzer.G1();
                     break;
@@ -133,7 +140,7 @@ void run(const UserParams& params) {
                     analyzer.ambientOcclusion();
                     break;
                 case Method::FEATURES:
-                    analyzer.statistics(true);
+                    analyzer.features();
                     break;
                 case Method::GENERATE_MICROFLAKES:
                 {

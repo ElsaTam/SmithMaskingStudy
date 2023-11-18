@@ -5,12 +5,24 @@
 #include <sstream>
 
 #include "utils/paths.h"
+#include "utils/console.h"
 
+
+bool operator==(const MethodParams& lhs, const MethodParams& rhs) {
+	if (lhs.method != rhs.method) return false;
+	if (lhs.computeError != rhs.computeError) return false;
+	if (lhs.jiggleFlakes != rhs.jiggleFlakes) return false;
+	return true;
+}
+
+bool operator!=(const MethodParams& lhs, const MethodParams& rhs) {
+	return !(lhs == rhs);
+}
 
 bool operator==(const PathParams& lhs, const PathParams& rhs) {
-	if (lhs.objFolder.compare(rhs.objFolder) != 0) return false;
-	if (lhs.hfFolder.compare(rhs.hfFolder) != 0) return false;
-	if (lhs.outputsFolder.compare(rhs.outputsFolder) != 0) return false;
+	if (lhs.objDir.compare(rhs.objDir) != 0) return false;
+	if (lhs.hfDir.compare(rhs.hfDir) != 0) return false;
+	if (lhs.outputsDir.compare(rhs.outputsDir) != 0) return false;
 	if (lhs.surfNames != rhs.surfNames) return false;
 	return true;
 }
@@ -31,6 +43,18 @@ bool operator==(const DirectionParams& lhs, const DirectionParams& rhs)
 }
 
 bool operator!=(const DirectionParams& lhs, const DirectionParams& rhs)
+{
+	return !(lhs == rhs);
+}
+
+bool operator==(const NDFParams& lhs, const NDFParams& rhs)
+{
+	if (lhs.nTheta != rhs.nTheta) return false;
+	if (lhs.nPhi != rhs.nPhi) return false;
+	return true;
+}
+
+bool operator!=(const NDFParams& lhs, const NDFParams& rhs)
 {
 	return !(lhs == rhs);
 }
@@ -63,9 +87,9 @@ bool operator!=(const RenderingParams& lhs, const RenderingParams& rhs)
 
 bool operator==(const UserParams& lhs, const UserParams& rhs)
 {
-	if (lhs.method != rhs.method) return false;
 	if (lhs.outLevel != rhs.outLevel) return false;
 	if (lhs.log != rhs.log) return false;
+	if (lhs.methodParams != rhs.methodParams) return false;
 	if (lhs.pathParams != rhs.pathParams) return false;
 	if (lhs.directionInParams != rhs.directionInParams) return false;
 	if (lhs.directionOutParams != rhs.directionOutParams) return false;
@@ -128,7 +152,52 @@ void Parameters::parse(const std::string& path)
 	// }
 	for (int i = 0; i < allUserParams.size(); ++i)
 	{
-		userParamsVector.push_back(createUserParams(allUserParams[i]));
+		if (checkRequired(allUserParams[i])) {
+			userParamsVector.push_back(createUserParams(allUserParams[i]));
+		}
+	}
+}
+
+// Required :
+// - methodParams.name
+// - pathParams.objDir
+// - pathParams.hfDir (if methodParams.name == "GENERATE_MICROFLAKES")
+// - pathParams.outputsDir
+// - pathParams.surfNames || (pathParams.surfMin && pathParams.surfMax)
+bool Parameters::checkRequired(jParser::jValue jValue) const {
+	bool requirements = true;
+	std::string methodName = "";
+	if (!jValue.contains("methodParams") || !jValue["methodParams"].contains("name")) {
+		Console::err << "methodParams.name is required." << std::endl;
+		requirements = false;
+	}
+	else {
+		methodName = jValue["methodParams"]["name"].as_string();
+	}
+	if (jValue.contains("pathParams")) {
+		if (!jValue["pathParams"].contains("objDir")) {
+			Console::err << "pathParams.objDir is required." << std::endl;
+			requirements = false;
+		}
+		if ((methodName.compare("GENERATE_MICROFLAKES") == 0) && (!jValue["pathParams"].contains("hfDir"))) {
+			Console::err << "pathParams.hfDir is required with method GENERATE_MICROFLAKES." << std::endl;
+			requirements = false;
+		}
+		if (!jValue["pathParams"].contains("outputsDir")) {
+			Console::err << "pathParams.outputsDir is required." << std::endl;
+			requirements = false;
+		}
+		if (jValue["pathParams"].contains("surfMin") || jValue["pathParams"].contains("surfMax")) {
+			if (jValue["pathParams"]["surfMin"].as_int() > jValue["pathParams"]["surfMax"].as_int() && !jValue["pathParams"].contains("surfNames")) {
+				Console::err << "At least on input surface is required (currently, pathParams.surfMin > pathParams.surfMax, and pathParams.surfNames is undefined. No surface names can be selected." << std::endl;
+				requirements = false;
+			}
+		}
+		else if (!jValue["pathParams"].contains("surfNames") && !(jValue["pathParams"].contains("surfMin") || jValue["pathParams"].contains("surfMax"))) {
+			Console::err << "At least on input surface is required (can be defined with pathParams.surfNames, or pathParams.surfMin and pathParams.surfMax)." << std::endl;
+			requirements = false;
+		}
+		return requirements;
 	}
 }
 
@@ -141,7 +210,7 @@ void Parameters::parse(const std::string& path)
 //     		"surfMin" : 1,
 //     		"surfMax" : 10,
 //     		"inputsFolder" : "../../inputs/",
-//     		"outputsFolder" : "../../outputs/"
+//     		"outputsDir" : "../../outputs/"
 //     },
 //     "directionParams" : {
 //     	   ...
@@ -158,18 +227,6 @@ void Parameters::parse(const std::string& path)
 // }
 UserParams Parameters::createUserParams(jParser::jValue jValue) const
 {
-	// Method
-	if (jValue.contains("method")) {
-		const std::string methodStr = jValue["method"].as_string();
-		if (methodStr.compare("GAF") == 0) userParams.method = Method::GAF;
-		else if (methodStr.compare("G1") == 0) userParams.method = Method::G1;
-		else if (methodStr.compare("D_TABULATION") == 0) userParams.method = Method::D_TABULATION;
-		else if (methodStr.compare("AMBIENT_OCCLUSION") == 0) userParams.method = Method::AMBIENT_OCCLUSION;
-		else if (methodStr.compare("FEATURES") == 0) userParams.method = Method::FEATURES;
-		else if (methodStr.compare("GENERATE_MICROFLAKES") == 0) userParams.method = Method::GENERATE_MICROFLAKES;
-		else if (methodStr.compare("FULL_PIPELINE") == 0) userParams.method = Method::FULL_PIPELINE;
-	}
-
 	// Out level
 	if (jValue.contains("outLevel")) {
 		const std::string outLevelStr = jValue["outLevel"].as_string();
@@ -185,9 +242,14 @@ UserParams Parameters::createUserParams(jParser::jValue jValue) const
 		userParams.log = jValue["log"].as_bool();
 	}
 
+	// Method Parameters
+	if (jValue.contains("methodParams")) {
+		userParams.methodParams = createMethodParams(jValue["methodParams"]);
+	}
+
 	// path parameters
 	if (jValue.contains("pathParams")) {
-		if (userParams.method == Method::GENERATE_MICROFLAKES)
+		if (userParams.methodParams.method == Method::GENERATE_MICROFLAKES)
 			userParams.pathParams = createPathParamsForHF(jValue["pathParams"]);
 		else
 			userParams.pathParams = createPathParamsForOBJ(jValue["pathParams"]);
@@ -204,6 +266,11 @@ UserParams Parameters::createUserParams(jParser::jValue jValue) const
 		userParams.directionOutParams = createDirectionParams(jValue["directionOutParams"]);
 	}
 
+	// NDF Parameters
+	if (jValue.contains("ndfParams")) {
+		userParams.ndfParams = createNDFParams(jValue["ndfParams"]);
+	}
+
 	// Side Effect Parameters
 	if (jValue.contains("sideEffectParams")) {
 		userParams.sideEffectParams = createSideEffectParams(jValue["sideEffectParams"]);
@@ -217,12 +284,41 @@ UserParams Parameters::createUserParams(jParser::jValue jValue) const
 	return userParams;
 }
 
+// "methodParams": {
+//     "name": "G1" | "GAF" | "D_TABULATION" | "FEATURES" | "FULL_PIPELINE" | "AMBIENT_OCCLUSION" | "GENERATE_MICROFLAKES",
+//     "computeError" : bool,
+//     "jiggleFlakes" : bool
+// }
+MethodParams Parameters::createMethodParams(jParser::jValue jValue) const {
+	MethodParams methodParams;
+
+	// Method
+	if (jValue.contains("name")) {
+		const std::string methodStr = jValue["name"].as_string();
+		if (methodStr.compare("GAF") == 0) methodParams.method = Method::GAF;
+		else if (methodStr.compare("G1") == 0) methodParams.method = Method::G1;
+		else if (methodStr.compare("D_TABULATION") == 0) methodParams.method = Method::D_TABULATION;
+		else if (methodStr.compare("FEATURES") == 0) methodParams.method = Method::FEATURES;
+		else if (methodStr.compare("FULL_PIPELINE") == 0) methodParams.method = Method::FULL_PIPELINE;
+		else if (methodStr.compare("AMBIENT_OCCLUSION") == 0) methodParams.method = Method::AMBIENT_OCCLUSION;
+		else if (methodStr.compare("GENERATE_MICROFLAKES") == 0) methodParams.method = Method::GENERATE_MICROFLAKES;
+	}
+	if (jValue.contains("computeError")) {
+		methodParams.computeError = jValue["computeError"].as_bool();
+	}
+	if (jValue.contains("jiggleFlakes")) {
+		methodParams.jiggleFlakes = jValue["jiggleFlakes"].as_bool();
+	}
+
+	return methodParams;
+}
+
 //  {
 //  	"surfNames": ["PerTex/001.obj"] ,
 //      "surfMin" : 1,
 //  	"surfMax" : 10,
 //  	"inputsFolder" : "../../inputs/",
-//  	"outputsFolder" : "../../outputs/"
+//  	"outputsDir" : "../../outputs/"
 //  }
 PathParams Parameters::createPathParamsForOBJ(jParser::jValue jValue) const
 {
@@ -259,19 +355,16 @@ PathParams Parameters::createPathParamsForOBJ(jParser::jValue jValue) const
 	}
 
 	// Folders
-	if (jValue.contains("objFolder")) {
-		pathParams.objFolder = jValue["objFolder"].as_string();
+	if (jValue.contains("objDir")) {
+		pathParams.objDir = jValue["objDir"].as_string();
 	}
-	if (jValue.contains("outputsFolder")) {
-		pathParams.outputsFolder = jValue["outputsFolder"].as_string();
+	if (jValue.contains("outputsDir")) {
+		pathParams.outputsDir = jValue["outputsDir"].as_string();
 	}
 
 	// Gnuplot executable
 	if (jValue.contains("gnuplotPath") && jValue["gnuplotPath"].as_string().size() > 0) {
 		pathParams.gnuplotPath = jValue["gnuplotPath"].as_string();
-	}
-	else {
-		pathParams.gnuplotPath = "gnuplot";
 	}
 
 	// Cuda source
@@ -307,35 +400,27 @@ PathParams Parameters::createPathParamsForHF(jParser::jValue jValue) const
 	}
 	
 	// Output mesh resolutions
-	if ((jValue.contains("resMin") && jValue.contains("resMax")) || jValue.contains("res")) {
+	if (jValue.contains("resolutions")) {
 		pathParams.resolutions.clear();
-	}
-	if (jValue.contains("resMin") && jValue.contains("resMax")) {
-		for (int i = jValue["resMin"].as_int(); i <= jValue["resMax"].as_int(); ++i) {
-			pathParams.resolutions.push_back(i);
+		for (int i = 0; i < jValue["resolutions"].size(); ++i) {
+			pathParams.resolutions.push_back(jValue["resolutions"][i].as_int());
 		}
-	}
-	else if (jValue.contains("res")) {
-		pathParams.resolutions.push_back(jValue["res"].as_int());
 	}
 
 	// Folders
-	if (jValue.contains("hfFolder")) {
-		pathParams.hfFolder = jValue["hfFolder"].as_string();
+	if (jValue.contains("hfDir")) {
+		pathParams.hfDir = jValue["hfDir"].as_string();
 	}
-	if (jValue.contains("objFolder")) {
-		pathParams.objFolder = jValue["objFolder"].as_string();
+	if (jValue.contains("objDir")) {
+		pathParams.objDir = jValue["objDir"].as_string();
 	}
-	if (jValue.contains("outputsFolder")) {
-		pathParams.outputsFolder = jValue["outputsFolder"].as_string();
+	if (jValue.contains("outputsDir")) {
+		pathParams.outputsDir = jValue["outputsDir"].as_string();
 	}
 
 	// Gnuplot executable
 	if (jValue.contains("gnuplotPath") && jValue["gnuplotPath"].as_string().size() > 0) {
 		pathParams.gnuplotPath = jValue["gnuplotPath"].as_string();
-	}
-	else {
-		pathParams.gnuplotPath = "gnuplot";
 	}
 
 	// Cuda source
@@ -382,8 +467,26 @@ DirectionParams Parameters::createDirectionParams(jParser::jValue jValue) const
 }
 
 // {
-// 	    "borderPercentage" : 0.5,
-// 		"BBox" : true
+// 	    "nTheta" : 100,
+// 		"nPhi" : 400
+// }
+NDFParams Parameters::createNDFParams(jParser::jValue jValue) const
+{
+	NDFParams ndfParams;
+
+	if (jValue.contains("nTheta")) {
+		ndfParams.nTheta = jValue["nTheta"].as_int();
+	}
+	if (jValue.contains("nPhi")) {
+		ndfParams.nPhi = jValue["nPhi"].as_int();
+	}
+
+	return ndfParams;
+}
+
+// {
+// 	    "borderPercentage" : 0.2,
+// 		"BBox" : false
 // }
 SideEffectParams Parameters::createSideEffectParams(jParser::jValue jValue) const
 {

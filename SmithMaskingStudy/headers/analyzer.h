@@ -75,8 +75,8 @@ public:
 	// Decoupe en sets
 	void sets();
 
-	// Statistics
-	void statistics(bool computeError);
+	// Features
+	void features();
 
 	void fullPipeline();
 };

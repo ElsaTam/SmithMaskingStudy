@@ -12,15 +12,15 @@ namespace Path {
 
 
 	const std::string& objFolder() {
-		return Parameters::userParams.pathParams.objFolder;
+		return Parameters::userParams.pathParams.objDir;
 	}
 
 	const std::string& hfFolder() {
-		return Parameters::userParams.pathParams.hfFolder;
+		return Parameters::userParams.pathParams.hfDir;
 	}
 
 	const std::string& outputRootFolder() {
-		return Parameters::userParams.pathParams.outputsFolder;
+		return Parameters::userParams.pathParams.outputsDir;
 	}
 
 	std::string subdivisionFolderName(int res) {
@@ -138,7 +138,7 @@ namespace Path {
 	std::string tabulationError(const std::string& surfName, int res) {
 		return tabulations_Folder(res) + surfName + "_E.csv";
 	}
-	std::string statisticsFile(int res) {
+	std::string featuresFile(int res) {
 		return statistics_Folder(res) + "features.csv";
 	}
 

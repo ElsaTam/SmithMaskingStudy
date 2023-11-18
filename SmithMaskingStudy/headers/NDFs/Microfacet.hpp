@@ -23,6 +23,7 @@
 
 #include "gdt/math/frame.h"
 #include "shapes/TriangleMesh.h"
+#include "utils/params.h"
 
 using namespace gdt;
 
@@ -513,8 +514,8 @@ public:
     vec3sc sample(float u1, float u2, scal& _pdf, scal& _D) const override;
 
     inline std::string name() const override { return "Discrete"; }
-    inline static size_t phiSize()   { return 400; } // 400
-    inline static size_t thetaSize() { return 100; } // 100
+    inline static size_t phiSize()   { return Parameters::userParams.ndfParams.nPhi; } // 400
+    inline static size_t thetaSize() { return Parameters::userParams.ndfParams.nTheta; } // 100
     inline const std::vector<std::vector<float>>& getValues() const { return D_values; }
 
     inline static float phiStart()   { return -m_pi; }

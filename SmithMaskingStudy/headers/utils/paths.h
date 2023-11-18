@@ -53,7 +53,7 @@ namespace Path {
 	std::string tabulationG1_smith(const std::string& surfName, int res = 0);
 	std::string tabulationGAF_rc(const std::string& surfName, scal phiIn, scal thetaIn, int res = 0);
 	std::string tabulationError(const std::string& surfName, int res = 0);
-	std::string statisticsFile(int res = 0);
+	std::string featuresFile(int res = 0);
 
 
 	// Utils
