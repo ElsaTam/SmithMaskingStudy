@@ -28,12 +28,11 @@
 
 void INFO_PHI(scal phi, int i, size_t nPhi)
 {
-    if (Parameters::get()->currentParams()->outLevel >= OutLevel::INFO) {
-        Console::light << Console::timePad << Console::indent;
-        Console::light << "(" << std::setfill(' ')
-            << std::setw(std::to_string(nPhi).length()) << i << " / " << nPhi << ") ";
-        Console::light << "phi = " << phi << std::endl;
-    }
+    std::stringstream ss;
+    ss << Console::timePad << Console::indent;
+    ss << "(" << std::setfill(' ') << std::setw(std::to_string(nPhi).length()) << i << " / " << nPhi << ") ";
+    ss << "phi = " << phi;
+    Console::print(OutLevel::TRACE, ss.str());
 }
 
 
@@ -86,7 +85,7 @@ void Analyzer::setGeo(TriangleMesh* _mesh)
         Duration tmp_duration = Duration(tmp_start, tmp_end);
         LOG_MESSAGE("Analyzer geo prepared in " + tmp_duration.str());
     }
-    Console::out << std::endl;
+    Console::print(OutLevel::NORMAL, "");
 }
 
 
@@ -183,8 +182,7 @@ std::unique_ptr<MicrofacetDistribution> Analyzer::getTheoricalNDF() const
         }
 
         if (tokens.size() != 3 && tokens.size() != 5) {
-            Console::err << Console::timePad
-                << "Name of the .obj file does not follow the format such as beckmann-0-50, no analytic NDF could be found. Beckmann with roughness=0.50 is used." << std::endl;
+            Console::print(OutLevel::ERR, Console::timePad + "Name of the .obj file does not follow the format such as beckmann-0-50, no analytic NDF could be found. Beckmann with roughness=0.50 is used.");
             alpha.x = alpha.y = 0.5f;
             profil = MicrofacetProfil::BECKMANN;
         }
@@ -320,7 +318,7 @@ void Analyzer::G1()
 
     // Finalize error computation
     SMAPE = normalize_error(SMAPE, D.nPhi * D.nTheta);
-    Console::info << Console::timeStamp << "Error (SMAPE) = " << SMAPE << std::endl;
+    Console::print(OutLevel::INFO, Console::timeStamp.str() + "Error (SMAPE) = " + std::to_string(SMAPE));
 
     EXIT
 }
@@ -751,19 +749,18 @@ void Analyzer::features()
     
     csv::CSVWriter* writer = new csv::CSVWriter(Path::featuresFile(mesh->subdivisions()), std::ios_base::app);
 
-    Console::out << Console::timeStamp << "Computing features..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Computing features...");
     StatisticsTool stats(mesh, E);
 
-    Console::out << std::endl;
-    stats.print();
-    Console::out << std::endl;
+    Console::print(OutLevel::TRACE, "");
+    stats.print(OutLevel::TRACE);
+    Console::print(OutLevel::TRACE, "");
 
-    Console::out << Console::timePad << "Writing features..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Writing features...");
     if (writer->numberOfLines() == 0) stats.CSVHeader(writer);
     stats.toCSV(writer);
 
-    Console::succ << Console::timePad
-        << "Features append in " << writer->getFilename() << std::endl;
+    Console::print(OutLevel::SUCCESS, Console::timePad + "Features append in " + writer->getFilename());
 
     EXIT
 }
@@ -804,7 +801,7 @@ void Analyzer::fullPipeline()
     writeTheta(*writer_rc, false);
     writeTheta(*writer_error, false);
 
-    Console::out << Console::timeStamp << "Analyzer computing G1s..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Analyzer computing G1s...");
 
     // Prepare error
     scal E = 0;
@@ -853,11 +850,13 @@ void Analyzer::fullPipeline()
         writer_error->writeRow(vector_error);
 
         if (Parameters::get()->currentParams()->outLevel >= OutLevel::INFO) {
-            Console::light << Console::timePad << Console::indent;
-            Console::light << "(" << std::setfill(' ') << std::setw(std::to_string(D.nPhi).length()) << i << " / " << D.nPhi << ") ";
+            std::stringstream ss;
+            ss << Console::timePad << Console::indent;
+            ss << "(" << std::setfill(' ') << std::setw(std::to_string(D.nPhi).length()) << i << " / " << D.nPhi << ") ";
             if (render)
-                Console::light << "Current error = " << std::to_string(E);
-            Console::light << "     ###     phi = " << std::to_string(phi) << std::endl;
+                ss << "Current error = " << std::to_string(E);
+            ss << "     ###     phi = " << std::to_string(phi);
+            Console::print(OutLevel::TRACE, ss.str());
         }
     }
 
@@ -871,17 +870,17 @@ void Analyzer::fullPipeline()
     // End error statistics
     if (render) {
         E = normalize_error(E, D.nPhi * D.nTheta);
-        Console::prog << Console::timePad << "Error = " << E << std::endl;
+        Console::print(OutLevel::TRACE, Console::timePad + "Error = " + std::to_string(E));
     }
 
-    Console::out << Console::timeStamp << "Computing statistics..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Computing features...");
     StatisticsTool stats(mesh, E);
 
-    Console::out << Console::timePad << "Writing statistics..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Writing features...");
     if (writer_stats->numberOfLines() == 0) stats.CSVHeader(writer_stats);
     stats.toCSV(writer_stats);
 
-    Console::succ << Console::timePad << "Statistics append in " << writer_stats->getFilename() << std::endl;
+    Console::print(OutLevel::TRACE, Console::timePad + "Statistics append in " + writer_stats->getFilename());
 
     writer_stats->close();
     delete writer_stats;
