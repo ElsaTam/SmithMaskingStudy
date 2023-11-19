@@ -618,7 +618,34 @@ vec3sc Discrete::sample(float u1, float u2, scal& _pdf, scal& _D) const
     return w;
 }
 
+void Discrete::toCSV(const std::string& output) const {
+    csv::CSVWriter* writer_distrib = new csv::CSVWriter(output);
 
+    scal thetaStep = (thetaEnd() - thetaStart()) / (scal)thetaSize();
+    scal phiStep   = (phiEnd()   - phiStart())   / (scal)phiSize();
+    
+    std::vector<csv::elem> thetas;
+    thetas.push_back({ csv::elem::Tag::STRING, "" });
+    for (int j = 0; j < thetaSize(); ++j) { thetas.push_back({ csv::elem::Tag::SCAL, thetaStart() + j * thetaStep }); }
+    writer_distrib->writeRow(thetas);
+
+    for (int i = 0; i < phiSize(); ++i) {
+        std::vector<csv::elem> vector_d;
+        vector_d.push_back({ csv::elem::Tag::SCAL, phiStart() + i * phiStep });
+
+        scal phi = phiStart() + (i + 0.5) * phiStep;
+
+        for (int j = 0; j < thetaSize(); ++j) {
+            scal theta = thetaStart() + (j + 0.5) * thetaStep;
+            vector_d.push_back({ csv::elem::Tag::SCAL, D(Conversion::polar_to_cartesian(theta, phi)) });
+        }
+
+        writer_distrib->writeRow(vector_d);
+    }
+
+    writer_distrib->close();
+    delete writer_distrib;
+}
 
 std::ostream& operator<<(std::ostream& output, const Discrete& ndf) {
     output << Console::timePad << "Discrete distribution: shape (nPhi, nTheta) = (" << ndf.phiSize() << ", " << ndf.thetaSize() << ")" << std::endl;

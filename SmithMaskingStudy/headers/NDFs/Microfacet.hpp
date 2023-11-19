@@ -523,6 +523,8 @@ public:
     inline static float thetaStart() { return 0; }
     inline static float thetaEnd()   { return m_pi_2; }
 
+    void toCSV(const std::string& output) const;
+
     inline std::vector<float>& operator[](size_t phiIndex) { return D_values[phiIndex]; }
     inline const std::vector<float>& operator[](size_t phiIndex) const { return D_values[phiIndex]; }
 
