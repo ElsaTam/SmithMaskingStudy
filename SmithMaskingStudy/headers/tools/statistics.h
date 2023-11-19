@@ -23,7 +23,7 @@ private:
     const TriangleMesh* mesh;
 
     // error
-    scal m_error{ 0 };
+    ld m_error{ 0 };
 
     // phi
     ld m_phiAnisotropy{ 0 };
