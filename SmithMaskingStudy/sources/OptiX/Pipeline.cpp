@@ -88,15 +88,12 @@ void Pipeline::createModule(const char* ptx_path)
 {
     std::string ptxCode;
     if (!readFile(ptxCode, ptx_path)) {
-        Console::err << "Error reading the file " << ptx_path << std::endl;
+        Console::print(OutLevel::ERR, "Error reading the file " + std::string(ptx_path));
         exit(2);
     }
 
-    if (Parameters::get()->currentParams()->outLevel >= OutLevel::INFO) {
-        Console::out
-            << Console::timePad << Console::indent << "ptx_path " << ptx_path << std::endl
-            << Console::timePad << Console::indent << "ptx size " << ptxCode.size() << std::endl;
-    }
+    Console::print(OutLevel::INFO, Console::timePad + Console::indent + "ptx_path " + std::string(ptx_path));
+    Console::print(OutLevel::INFO, Console::timePad + Console::indent + "ptxsize " + std::to_string(ptxCode.size()));
 
     char log[2048]; // For error reporting from OptiX creation functions
     size_t sizeof_log = sizeof(log);
