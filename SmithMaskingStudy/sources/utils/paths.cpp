@@ -223,8 +223,8 @@ namespace Path {
 		}
 
 		if (print) Console::out << "----- Param files -----" << std::endl;
-		allPathCorrects = checkFile(ptxFile(), print)    && allPathCorrects;
-		allPathCorrects = checkFile(gnuplotExe(), print) && allPathCorrects;
+		allPathCorrects = checkFile(ptxFile(), print) && allPathCorrects;
+		//allPathCorrects = checkFile(gnuplotExe(), print) && allPathCorrects;
 
 		return allPathCorrects;
 	}
