@@ -67,7 +67,7 @@ void moveFiles(const std::string& src, const std::string& target)
     }
     catch (std::exception& e)
     {
-        Console::err << "[ERROR] " << e.what() << std::endl;
+        Console::print(OutLevel::ERR, e.what());
     }
 }
 
@@ -79,15 +79,15 @@ void cleanDirectory(const std::string& path)
             std::filesystem::remove_all(entry.path());
     }
     catch (std::exception& e) {
-        Console::err << "[ERROR] " << e.what() << std::endl;
+        Console::print(OutLevel::ERR, e.what());
     }
 }
 
 void run() {
 
-    Console::info << Console::line << Console::line;
-    Console::info << "Method " << std::string(magic_enum::enum_name(Parameters::get()->currentParams()->methodParams.method)) << std::endl;
-    Console::info << Console::line << std::endl;
+    Console::print(OutLevel::INFO, Console::line);
+    Console::print(OutLevel::INFO, "Method " + std::string(magic_enum::enum_name(Parameters::get()->currentParams()->methodParams.method)));
+    Console::print(OutLevel::INFO, Console::line);
 
     bool useGPU = (Parameters::get()->currentParams()->methodParams.method == Method::G1)
         || (Parameters::get()->currentParams()->methodParams.method == Method::GAF)
@@ -103,9 +103,9 @@ void run() {
         // for each resolution
         for (int res : Path::resolutions())
         {
-            Console::out << Console::shortline;
-            Console::out << surfName << ", " << res << " subdivisions" << std::endl;
-            Console::out << Console::shortline << std::endl;
+            Console::print(OutLevel::NORMAL, Console::shortline);
+            Console::print(OutLevel::NORMAL, surfName + ", " + std::to_string(res) + " subdivisions");
+            Console::print(OutLevel::NORMAL, Console::shortline);
 
             try {
                 TriangleMesh* mesh;
@@ -163,11 +163,10 @@ void run() {
                 }
                 delete mesh;
 
-                Console::succ << Console::timeStamp << "Done with " << surfName << std::endl;
+                Console::print(OutLevel::SUCCESS, Console::timeStamp.str() + "Done with " + surfName);
             }
             catch (const std::exception& e) {
-                if (Parameters::get()->currentParams()->outLevel >= OutLevel::ERR)
-                    Console::err << e.what() << std::endl;
+                Console::print(OutLevel::ERR, e.what());
                 LOG_ERROR(e.what());
             }
         }
@@ -187,14 +186,14 @@ void createFolder(const std::string& path, bool withSubdivisions) {
 }
 
 bool createOutputFolders() {
-    Console::out << "Create folders : " << Path::outputRootFolder() << std::endl;
+    Console::print(OutLevel::TRACE, "Create folders : " + Path::outputRootFolder());
     // check if root exists :
     if (! Path::exists(Path::outputRootFolder())) {
-        Console::err << "Incorrect output path: " << Path::outputRootFolder() << std::endl;
+        Console::print(OutLevel::ERR, "Incorrect output path: " + Path::outputRootFolder());
         return false;
     }
     if (! Path::isFolder(Path::outputRootFolder())) {
-        Console::err << "Output path is not a directory: " << Path::outputRootFolder() << std::endl;
+        Console::print(OutLevel::ERR, "Output path is not a directory: " + Path::outputRootFolder());
         return false;
     }
 
@@ -225,7 +224,7 @@ bool createOutputFolders() {
 
     if (!Path::checkPaths()) {
         Path::checkPaths(true);
-        Console::err << "There were issues while creating folders. Please correct the paths manually before restarting the program." << std::endl;
+        Console::print(OutLevel::ERR, "There were issues while creating folders. Please correct the paths manually before restarting the program.");
         return false;
     }
 
@@ -239,7 +238,7 @@ int main(int argc, char* argv[]) {
 #endif
 
     if (argc == 1) {
-        Console::err << "No input file has been given." << std::endl;
+        Console::print(OutLevel::ERR, "No input file has been given.");
         return 0;
     }
 
@@ -260,7 +259,7 @@ int main(int argc, char* argv[]) {
             file = argv[i];
         }
         else {
-            Console::err << "Unknown argument " << argv[i] << " (parameters file has already been provided: " << file << ")" << std::endl;
+            Console::print(OutLevel::ERR, "Unknown argument " + std::string(argv[i]) + " (parameters file has already been provided: " + file + ")");
         }
     }
 
@@ -275,7 +274,7 @@ int main(int argc, char* argv[]) {
             Logger::getInstance().setFolder(Path::logs_Folder());
             Logger::getInstance().enable(Parameters::get()->currentParams()->log);
             run();
-            Console::out << std::endl << std::endl;
+            Console::print(OutLevel::NORMAL, "\n");
         }
     }
 
