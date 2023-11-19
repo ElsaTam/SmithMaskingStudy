@@ -84,11 +84,11 @@ namespace Path {
 	std::string ambientOcclusion_Folder(int res) {
 		return subdivisionFolderPath(ambientOcclusion_Folder(), res);
 	}
-	std::string statistics_Folder() {
-		return outputRootFolder() + "statistics/";
+	std::string features_Folder() {
+		return outputRootFolder() + "features/";
 	}
-	std::string statistics_Folder(int res) {
-		return subdivisionFolderPath(statistics_Folder(), res);
+	std::string features_Folder(int res) {
+		return subdivisionFolderPath(features_Folder(), res);
 	}
 
 	// Paths to files
@@ -139,7 +139,7 @@ namespace Path {
 		return tabulations_Folder(res) + surfName + "_E.csv";
 	}
 	std::string featuresFile(int res) {
-		return statistics_Folder(res) + "features.csv";
+		return features_Folder(res) + "features.csv";
 	}
 
 	const std::string& ptxFile() {
@@ -209,7 +209,7 @@ namespace Path {
 		allPathCorrects = checkFolder(GAF_3D_Folder(), print)           && allPathCorrects;
 		allPathCorrects = checkFolder(tabulations_Folder(), print)      && allPathCorrects;
 		allPathCorrects = checkFolder(ambientOcclusion_Folder(), print) && allPathCorrects;
-		allPathCorrects = checkFolder(statistics_Folder(), print)       && allPathCorrects;
+		allPathCorrects = checkFolder(features_Folder(), print)       && allPathCorrects;
 
 		if (print) Console::out << "----- Resolution folders -----" << std::endl;
 		for (int res : resolutions()) {
@@ -219,7 +219,7 @@ namespace Path {
 			allPathCorrects = checkFolder(GAF_3D_Folder(res), print)           && allPathCorrects;
 			allPathCorrects = checkFolder(tabulations_Folder(res), print)      && allPathCorrects;
 			allPathCorrects = checkFolder(ambientOcclusion_Folder(res), print) && allPathCorrects;
-			allPathCorrects = checkFolder(statistics_Folder(res), print)       && allPathCorrects;
+			allPathCorrects = checkFolder(features_Folder(res), print)       && allPathCorrects;
 		}
 
 		if (print) Console::out << "----- Param files -----" << std::endl;

@@ -214,7 +214,7 @@ bool createOutputFolders() {
     createFolder(Path::ambientOcclusion_Folder(), true);
 
     // statistics
-    createFolder(Path::statistics_Folder(), true);
+    createFolder(Path::features_Folder(), true);
 
     if (!Path::checkPaths()) {
         Path::checkPaths(true);

@@ -38,8 +38,8 @@ namespace Path {
 	std::string tabulations_Folder(int res);
 	std::string ambientOcclusion_Folder();
 	std::string ambientOcclusion_Folder(int res);
-	std::string statistics_Folder();
-	std::string statistics_Folder(int res);
+	std::string features_Folder();
+	std::string features_Folder(int res);
 
 	const std::string& ptxFile();
 	const std::string& gnuplotExe();
