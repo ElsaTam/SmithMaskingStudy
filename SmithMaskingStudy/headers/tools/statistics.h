@@ -92,5 +92,5 @@ public:
     static void CSVHeader(csv::CSVWriter* writer);
     void toCSV(csv::CSVWriter* writer);
 
-    void print();
+    void print(OutLevel level);
 };

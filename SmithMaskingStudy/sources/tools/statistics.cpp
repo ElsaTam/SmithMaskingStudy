@@ -659,8 +659,10 @@ void StatisticsTool::toCSV(csv::CSVWriter* writer) {
 }
 
 
-void StatisticsTool::print() {
-    Console::out << *this << std::endl;
+void StatisticsTool::print(OutLevel level) {
+    std::stringstream ss;
+    ss << *this;
+    Console::print(level, ss.str());
 }
 
 
