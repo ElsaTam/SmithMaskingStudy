@@ -9,8 +9,12 @@ Things to do/finish:
     <li>Python scripts</li>
     <li>Masking correction</li>
     <li>Readme (installation, dependencies, database, links, etc.)</li>
-    <li>Respect outLevel in console</li>
-    <li>Cleaning code</li>
+    <li>Cleaning code
+        <ul>
+            <li>Respect outLevel in console</li>
+            <li>Check manually closed files<li>
+        </ul>
+    </li>
 </ul>
 </div>
 
