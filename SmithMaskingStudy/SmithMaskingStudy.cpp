@@ -106,19 +106,26 @@ void run() {
             Console::out << Console::shortline;
             Console::out << surfName << ", " << res << " subdivisions" << std::endl;
             Console::out << Console::shortline << std::endl;
-            continue;
 
             try {
                 TriangleMesh* mesh;
                 if (Parameters::get()->currentParams()->methodParams.method == Method::GENERATE_MICROFLAKES) {
                     LOG_NAME(Path::hfFolder(), surfName);
-                    MicroflakesGenerator generator(Path::hfFile(surfName));
+                    const std::string& hfPath = Path::hfFile(surfName);
+                    if (!Path::isFile(hfPath)) {
+                        throw std::runtime_error("File not found: " + hfPath);
+                    }
+                    MicroflakesGenerator generator(hfPath);
                     int size = pow(2, res);
                     mesh = generator.createModel({ size, size });
                 }
                 else {
                     LOG_NAME(Path::objFolder(), surfName);
-                    mesh = createMesh(Path::objFile(surfName, res));
+                    const std::string& objPath = Path::objFile(surfName, res);
+                    if (!Path::isFile(objPath)) {
+                        throw std::runtime_error("File not found: " + objPath);
+                    }
+                    mesh = createMesh(objPath);
                 }
 
                 LOG_OBJ(mesh);
