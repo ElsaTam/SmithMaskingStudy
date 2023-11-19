@@ -83,8 +83,8 @@ Histogram::Histogram(const vec3sc& w, const TriangleMesh& mesh, scal borderPerce
             vec3sc v(t1 * v1 + t2 * v2 + (1.f - t1 - t2) * v3);
 
             /* Check if not too close from the border */
-            if (mesh.bounds.closest_distance(v).x < Parameters::userParams.sideEffectParams.borderPercentage * mesh.bounds.span().x / 2.f
-                || mesh.bounds.closest_distance(v).y < Parameters::userParams.sideEffectParams.borderPercentage * mesh.bounds.span().y / 2.f)
+            if (mesh.bounds.closest_distance(v).x < Parameters::get()->currentParams()->sideEffectParams.borderPercentage * mesh.bounds.span().x / 2.f
+                || mesh.bounds.closest_distance(v).y < Parameters::get()->currentParams()->sideEffectParams.borderPercentage * mesh.bounds.span().y / 2.f)
             {
                 continue;
             }

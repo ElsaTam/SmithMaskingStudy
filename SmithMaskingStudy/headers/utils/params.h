@@ -105,26 +105,29 @@ bool operator!=(const UserParams& lhs, const UserParams& rhs);
 
 class Parameters {
 public:
-    static UserParams userParams;
 
-    Parameters();
-    Parameters(const std::vector<std::string>& paths);
+    Parameters(const Parameters& other) = delete;
+    static Parameters* get();
+    void parse(const std::string& path);
 
-    void addDefault();
-    size_t getNumberOfLaunchs() const;
-    const UserParams& getParamsForLaunch(int i) const;
+    void setIndex(int i);
+    size_t size() const { return userParamsVector.size(); }
+    UserParams const * const currentParams() const { return userParams; }
 
 private:
-    void parse(const std::string& path);
+    static Parameters* instancePtr;
+    Parameters() {};
+
+    UserParams* userParams = nullptr;
+
     bool checkRequired(jParser::jValue jValue) const;
-    UserParams createUserParams(jParser::jValue jValue) const;
-    MethodParams createMethodParams(jParser::jValue jValue) const;
-    PathParams createPathParamsForOBJ(jParser::jValue jValue) const;
-    PathParams createPathParamsForHF(jParser::jValue jValue) const;
-    DirectionParams createDirectionParams(jParser::jValue jValue) const;
-    NDFParams createNDFParams(jParser::jValue jValue) const;
-    SideEffectParams createSideEffectParams(jParser::jValue jValue) const;
-    RenderingParams createRenderingParams(jParser::jValue jValue) const;
+    void createUserParams(jParser::jValue jValue);
+    void createMethodParams(jParser::jValue jValue);
+    void createPathParams(jParser::jValue jValue);
+    void createDirectionParams(jParser::jValue jValue, DirectionParams& directionParams);
+    void createNDFParams(jParser::jValue jValue);
+    void createSideEffectParams(jParser::jValue jValue);
+    void createRenderingParams(jParser::jValue jValue);
 
     std::vector<UserParams> userParamsVector;
 };

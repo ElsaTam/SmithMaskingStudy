@@ -83,18 +83,17 @@ void cleanDirectory(const std::string& path)
     }
 }
 
-void run(const UserParams& params) {
+void run() {
 
     Console::info << Console::line << Console::line;
-    Console::info << "Method " << std::string(magic_enum::enum_name(Parameters::userParams.methodParams.method)) << std::endl;
+    Console::info << "Method " << std::string(magic_enum::enum_name(Parameters::get()->currentParams()->methodParams.method)) << std::endl;
     Console::info << Console::line << std::endl;
 
-    bool useGPU = (params.methodParams.method == Method::G1)
-        || (params.methodParams.method == Method::GAF)
-        //|| (params.methodParams.method == Method::TABULATION)
-        //|| (params.methodParams.method == Method::FEATURES)
-        || (params.methodParams.method == Method::AMBIENT_OCCLUSION)
-        || (params.methodParams.method == Method::GENERATE_MICROFLAKES);
+    bool useGPU = (Parameters::get()->currentParams()->methodParams.method == Method::G1)
+        || (Parameters::get()->currentParams()->methodParams.method == Method::GAF)
+        || (Parameters::get()->currentParams()->methodParams.method == Method::FEATURES && Parameters::get()->currentParams()->methodParams.computeError)
+        || (Parameters::get()->currentParams()->methodParams.method == Method::FULL_PIPELINE)
+        || (Parameters::get()->currentParams()->methodParams.method == Method::AMBIENT_OCCLUSION);
 
     Analyzer analyzer(nullptr, useGPU);
 
@@ -111,7 +110,7 @@ void run(const UserParams& params) {
 
             try {
                 TriangleMesh* mesh;
-                if (params.methodParams.method == Method::GENERATE_MICROFLAKES) {
+                if (Parameters::get()->currentParams()->methodParams.method == Method::GENERATE_MICROFLAKES) {
                     LOG_NAME(Path::hfFolder(), surfName);
                     MicroflakesGenerator generator(Path::hfFile(surfName));
                     int size = pow(2, res);
@@ -126,7 +125,7 @@ void run(const UserParams& params) {
 
                 analyzer.setGeo(mesh);
 
-                switch (params.methodParams.method) {
+                switch (Parameters::get()->currentParams()->methodParams.method) {
                 case Method::G1:
                     analyzer.G1();
                     break;
@@ -160,7 +159,7 @@ void run(const UserParams& params) {
                 Console::succ << Console::timeStamp << "Done with " << surfName << std::endl;
             }
             catch (const std::exception& e) {
-                if (params.outLevel >= OutLevel::ERR)
+                if (Parameters::get()->currentParams()->outLevel >= OutLevel::ERR)
                     Console::err << e.what() << std::endl;
                 LOG_ERROR(e.what());
             }
@@ -240,31 +239,35 @@ int main(int argc, char* argv[]) {
     srand(time(0));
 
 
-    std::vector<std::string> files;
+    std::string file = "";
     for (int i = 1; i < argc; ++i) {
-        if (files.empty() && (std::strcmp(argv[i], "-h") == 0 || std::strcmp(argv[i], "--help") == 0)) {
+        if (file.empty() && (std::strcmp(argv[i], "-h") == 0 || std::strcmp(argv[i], "--help") == 0)) {
             help();
             return 0;
         }
-        else if (files.empty() && (std::strcmp(argv[i], "-e") == 0 || std::strcmp(argv[i], "--example") == 0)) {
+        else if (file.empty() && (std::strcmp(argv[i], "-e") == 0 || std::strcmp(argv[i], "--example") == 0)) {
             example();
             return 0;
         }
+        else if (file.empty()) {
+            file = argv[i];
+        }
         else {
-            files.push_back(argv[i]);
+            Console::err << "Unknown argument " << argv[i] << " (parameters file has already been provided: " << file << ")" << std::endl;
         }
     }
 
-    Parameters parameters(files);
+    Parameters* parameters = Parameters::get();
+    parameters->parse(file);
 
-    for (int launch = 0; launch < parameters.getNumberOfLaunchs(); ++launch)
+    for (int launch = 0; launch < parameters->size(); ++launch)
     {
-        const UserParams& userParams = parameters.getParamsForLaunch(launch);
+        parameters->setIndex(launch);
 
         if (createOutputFolders()) {
             Logger::getInstance().setFolder(Path::logs_Folder());
-            Logger::getInstance().enable(userParams.log);
-            run(userParams);
+            Logger::getInstance().enable(Parameters::get()->currentParams()->log);
+            run();
             Console::out << std::endl << std::endl;
         }
     }

@@ -13,7 +13,7 @@
 
 
 #define ENTER                                                                 \
-    if (Parameters::userParams.outLevel >= OutLevel::TRACE) { PING }          \
+    if (Parameters::get()->currentParams()->outLevel >= OutLevel::TRACE) { PING }          \
     const auto start = std::chrono::high_resolution_clock::now();
 
 #define GPU_ENTER                                                             \
@@ -28,7 +28,7 @@
 
 void INFO_PHI(scal phi, int i, size_t nPhi)
 {
-    if (Parameters::userParams.outLevel >= OutLevel::INFO) {
+    if (Parameters::get()->currentParams()->outLevel >= OutLevel::INFO) {
         Console::light << Console::timePad << Console::indent;
         Console::light << "(" << std::setfill(' ')
             << std::setw(std::to_string(nPhi).length()) << i << " / " << nPhi << ") ";
@@ -40,20 +40,20 @@ void INFO_PHI(scal phi, int i, size_t nPhi)
 Analyzer::Analyzer(TriangleMesh* _mesh, bool useGPU)
 {
     DIn = {};
-    DIn.phiStart   = Parameters::userParams.directionInParams.phiStart;
-    DIn.phiRange   = Parameters::userParams.directionInParams.phiEnd - DIn.phiStart;
-    DIn.thetaStart = Parameters::userParams.directionInParams.thetaStart;
-    DIn.thetaRange = Parameters::userParams.directionInParams.thetaEnd - DIn.thetaStart;
-    DIn.nPhi       = Parameters::userParams.directionInParams.nPhiSamples;
-    DIn.nTheta     = Parameters::userParams.directionInParams.nThetaSamples;
+    DIn.phiStart   = Parameters::get()->currentParams()->directionInParams.phiStart;
+    DIn.phiRange   = Parameters::get()->currentParams()->directionInParams.phiEnd - DIn.phiStart;
+    DIn.thetaStart = Parameters::get()->currentParams()->directionInParams.thetaStart;
+    DIn.thetaRange = Parameters::get()->currentParams()->directionInParams.thetaEnd - DIn.thetaStart;
+    DIn.nPhi       = Parameters::get()->currentParams()->directionInParams.nPhiSamples;
+    DIn.nTheta     = Parameters::get()->currentParams()->directionInParams.nThetaSamples;
 
     DOut = {};
-    DOut.phiStart   = Parameters::userParams.directionOutParams.phiStart;
-    DOut.phiRange   = Parameters::userParams.directionOutParams.phiEnd - DOut.phiStart;
-    DOut.thetaStart = Parameters::userParams.directionOutParams.thetaStart;
-    DOut.thetaRange = Parameters::userParams.directionOutParams.thetaEnd - DOut.thetaStart;
-    DOut.nPhi       = Parameters::userParams.directionOutParams.nPhiSamples;
-    DOut.nTheta     = Parameters::userParams.directionOutParams.nThetaSamples;
+    DOut.phiStart   = Parameters::get()->currentParams()->directionOutParams.phiStart;
+    DOut.phiRange   = Parameters::get()->currentParams()->directionOutParams.phiEnd - DOut.phiStart;
+    DOut.thetaStart = Parameters::get()->currentParams()->directionOutParams.thetaStart;
+    DOut.thetaRange = Parameters::get()->currentParams()->directionOutParams.thetaEnd - DOut.thetaStart;
+    DOut.nPhi       = Parameters::get()->currentParams()->directionOutParams.nPhiSamples;
+    DOut.nTheta     = Parameters::get()->currentParams()->directionOutParams.nThetaSamples;
 
     D = DOut;
 
@@ -81,7 +81,7 @@ void Analyzer::setGeo(TriangleMesh* _mesh)
     if (mesh && optixRenderer) {
         time_point tmp_start = std::chrono::high_resolution_clock::now();
         optixRenderer->setGeo(mesh);
-        optixRenderer->resize(Parameters::userParams.renderingParams.renderSize);
+        optixRenderer->resize(Parameters::get()->currentParams()->renderingParams.renderSize);
         time_point tmp_end = std::chrono::high_resolution_clock::now();
         Duration tmp_duration = Duration(tmp_start, tmp_end);
         LOG_MESSAGE("Analyzer geo prepared in " + tmp_duration.str());
@@ -97,14 +97,14 @@ void Analyzer::setGeo(TriangleMesh* _mesh)
 void Analyzer::prepareGPU()
 {
     if (optixRenderer == nullptr) {
-        if (Parameters::userParams.outLevel >= OutLevel::TRACE) { PING }
+        if (Parameters::get()->currentParams()->outLevel >= OutLevel::TRACE) { PING }
         time_point tmp_start = std::chrono::high_resolution_clock::now();
         optixRenderer = new OptixRenderer(mesh);
         time_point tmp_end = std::chrono::high_resolution_clock::now();
         Duration tmp_duration = Duration(tmp_start, tmp_end);
         LOG_MESSAGE("OptixRenderer built in " + tmp_duration.str());
     }
-    optixRenderer->resize(Parameters::userParams.renderingParams.renderSize);
+    optixRenderer->resize(Parameters::get()->currentParams()->renderingParams.renderSize);
 }
 
 // ------------------------------------------------------------------------- //
@@ -113,16 +113,16 @@ void Analyzer::prepareGPU()
 
 void Analyzer::logRenderingInfo() const
 {
-    switch (Parameters::userParams.methodParams.method)
+    switch (Parameters::get()->currentParams()->methodParams.method)
     {
     case Method::G1:
     case Method::FULL_PIPELINE:
-        LOG_MESSAGE("nPhi=" + std::to_string(Parameters::userParams.directionOutParams.nPhiSamples)
-            + ", phiStart=" + std::to_string(Parameters::userParams.directionOutParams.phiStart)
-            + ", phiEnd=" + std::to_string(Parameters::userParams.directionOutParams.phiEnd));
-        LOG_MESSAGE("nTheta=" + std::to_string(Parameters::userParams.directionOutParams.nThetaSamples)
-            + ", thetaStart=" + std::to_string(Parameters::userParams.directionOutParams.thetaStart)
-            + ", thetaEnd=" + std::to_string(Parameters::userParams.directionOutParams.thetaEnd));
+        LOG_MESSAGE("nPhi=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.nPhiSamples)
+            + ", phiStart=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.phiStart)
+            + ", phiEnd=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.phiEnd));
+        LOG_MESSAGE("nTheta=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.nThetaSamples)
+            + ", thetaStart=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.thetaStart)
+            + ", thetaEnd=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.thetaEnd));
         break;
 
     case Method::D_TABULATION:
@@ -136,18 +136,18 @@ void Analyzer::logRenderingInfo() const
 
     case Method::GAF:
     case Method::FEATURES:
-        LOG_MESSAGE("IN_nPhi=" + std::to_string(Parameters::userParams.directionInParams.nPhiSamples)
-            + ", IN_phiStart=" + std::to_string(Parameters::userParams.directionInParams.phiStart)
-            + ", IN_phiEnd=" + std::to_string(Parameters::userParams.directionInParams.phiEnd));
-        LOG_MESSAGE("IN_nTheta=" + std::to_string(Parameters::userParams.directionInParams.nThetaSamples)
-            + ", IN_thetaStart=" + std::to_string(Parameters::userParams.directionInParams.thetaStart)
-            + ", IN_thetaEnd=" + std::to_string(Parameters::userParams.directionInParams.thetaEnd));
-        LOG_MESSAGE("OUT_nPhi=" + std::to_string(Parameters::userParams.directionOutParams.nPhiSamples)
-            + ", OUT_phiStart=" + std::to_string(Parameters::userParams.directionOutParams.phiStart)
-            + ", OUT_phiEnd=" + std::to_string(Parameters::userParams.directionOutParams.phiEnd));
-        LOG_MESSAGE("OUT_nTheta=" + std::to_string(Parameters::userParams.directionOutParams.nThetaSamples)
-            + ", OUT_thetaStart=" + std::to_string(Parameters::userParams.directionOutParams.thetaStart)
-            + ", OUT_thetaEnd=" + std::to_string(Parameters::userParams.directionOutParams.thetaEnd));
+        LOG_MESSAGE("IN_nPhi=" + std::to_string(Parameters::get()->currentParams()->directionInParams.nPhiSamples)
+            + ", IN_phiStart=" + std::to_string(Parameters::get()->currentParams()->directionInParams.phiStart)
+            + ", IN_phiEnd=" + std::to_string(Parameters::get()->currentParams()->directionInParams.phiEnd));
+        LOG_MESSAGE("IN_nTheta=" + std::to_string(Parameters::get()->currentParams()->directionInParams.nThetaSamples)
+            + ", IN_thetaStart=" + std::to_string(Parameters::get()->currentParams()->directionInParams.thetaStart)
+            + ", IN_thetaEnd=" + std::to_string(Parameters::get()->currentParams()->directionInParams.thetaEnd));
+        LOG_MESSAGE("OUT_nPhi=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.nPhiSamples)
+            + ", OUT_phiStart=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.phiStart)
+            + ", OUT_phiEnd=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.phiEnd));
+        LOG_MESSAGE("OUT_nTheta=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.nThetaSamples)
+            + ", OUT_thetaStart=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.thetaStart)
+            + ", OUT_thetaEnd=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.thetaEnd));
         break;
 
     case Method::AMBIENT_OCCLUSION:
@@ -157,9 +157,9 @@ void Analyzer::logRenderingInfo() const
         break;
     }
 
-    LOG_MESSAGE("NUM_PIXEL_SAMPLES=" + std::to_string(Parameters::userParams.renderingParams.nPixelSamples)
-        + ", Frame=[" + std::to_string(Parameters::userParams.renderingParams.renderSize.x) + "x" + std::to_string(Parameters::userParams.renderingParams.renderSize.y) + "]"
-        + ", N_SAMPLES=" + std::to_string(Parameters::userParams.renderingParams.nPixelSamples * Parameters::userParams.renderingParams.renderSize.x * Parameters::userParams.renderingParams.renderSize.y));
+    LOG_MESSAGE("NUM_PIXEL_SAMPLES=" + std::to_string(Parameters::get()->currentParams()->renderingParams.nPixelSamples)
+        + ", Frame=[" + std::to_string(Parameters::get()->currentParams()->renderingParams.renderSize.x) + "x" + std::to_string(Parameters::get()->currentParams()->renderingParams.renderSize.y) + "]"
+        + ", N_SAMPLES=" + std::to_string(Parameters::get()->currentParams()->renderingParams.nPixelSamples * Parameters::get()->currentParams()->renderingParams.renderSize.x * Parameters::get()->currentParams()->renderingParams.renderSize.y));
 }
 
 // ------------------------------------------------------------------------- //
@@ -170,9 +170,9 @@ void Analyzer::logRenderingInfo() const
 /* // Old code, keep in case I use it again
 std::unique_ptr<MicrofacetDistribution> Analyzer::getTheoricalNDF() const
 {
-    vec2sc alpha = Parameters::userParams.ndfParams.alpha;
-    MicrofacetProfil profil = Parameters::userParams.ndfParams.profil;
-    if (Parameters::userParams.ndfParams.findAlphaFromFileName) {
+    vec2sc alpha = Parameters::get()->currentParams()->ndfParams.alpha;
+    MicrofacetProfil profil = Parameters::get()->currentParams()->ndfParams.profil;
+    if (Parameters::get()->currentParams()->ndfParams.findAlphaFromFileName) {
         std::string fname = mesh->name;
 
         std::vector<std::string> tokens;
@@ -239,7 +239,7 @@ void Analyzer::G1()
     GPU_ENTER
 
     // Create the discrete NDF
-    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
+    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage));
 
     // Init csv writer to store results
     int res = mesh->subdivisions();
@@ -333,7 +333,7 @@ void Analyzer::GAF()
     GPU_ENTER
 
     // Create the discrete NDF
-    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
+    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage));
 
     // Mesh resolution
     int res = mesh->subdivisions();
@@ -536,7 +536,7 @@ void Analyzer::tabulate(bool D, bool G1_Ashikhmin, bool G1_RT)
     }
 
     // Create the discrete NDF
-    Discrete* NDF = (D || G1_Ashikhmin) ? new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage) : nullptr;
+    Discrete* NDF = (D || G1_Ashikhmin) ? new Discrete(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage) : nullptr;
 
     // Mesh resolution
     int res = mesh->subdivisions();
@@ -712,7 +712,7 @@ scal Analyzer::error()
     GPU_ENTER
 
     // Create the discrete NDF
-    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
+    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage));
 
     scal SMAPE = 0;
 
@@ -745,7 +745,7 @@ scal Analyzer::error()
 void Analyzer::features()
 {
     GPU_ENTER
-    scal E = Parameters::userParams.methodParams.computeError ? error() : 0.f;
+    scal E = Parameters::get()->currentParams()->methodParams.computeError ? error() : 0.f;
     
     csv::CSVWriter* writer = new csv::CSVWriter(Path::featuresFile(mesh->subdivisions()), std::ios_base::app);
 
@@ -785,8 +785,8 @@ void Analyzer::fullPipeline()
     }
 
     // Create the discrete NDF
-    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
-    
+    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage));
+
     // Create CSV writers
     int res = mesh->subdivisions();
     csv::CSVWriter* writer_distrib = new csv::CSVWriter(Path::tabulationD(mesh->name, res));
@@ -860,7 +860,7 @@ void Analyzer::fullPipeline()
         writer_rc->writeRow(vector_g1_rt);
         writer_error->writeRow(vector_error);
 
-        if (Parameters::userParams.outLevel >= OutLevel::INFO) {
+        if (Parameters::get()->currentParams()->outLevel >= OutLevel::INFO) {
             Console::light << Console::timePad << Console::indent;
             Console::light << "(" << std::setfill(' ') << std::setw(std::to_string(nPhi).length()) << i << " / " << nPhi << ") ";
             if (render)

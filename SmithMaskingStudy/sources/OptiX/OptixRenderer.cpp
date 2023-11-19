@@ -92,10 +92,10 @@ void OptixRenderer::resize(const vec2i& newSize)
 void OptixRenderer::setUserParams()
 {
     // Visibility
-    launchParams.visibility.useSmooth = Parameters::userParams.renderingParams.useSmooth;
+    launchParams.visibility.useSmooth = Parameters::get()->currentParams()->renderingParams.useSmooth;
 
     // Program type
-    switch (Parameters::userParams.methodParams.method) {
+    switch (Parameters::get()->currentParams()->methodParams.method) {
     case Method::G1:
     case Method::GENERATE_MICROFLAKES:
     case Method::FEATURES:
@@ -125,7 +125,7 @@ void OptixRenderer::setCamera()
     vec3sc up{ 0., 1., 0. };
     scal cosFovy = max(mesh->bounds.span().x, mesh->bounds.span().y);
 
-    launchParams.camera.nPixelSamples = Parameters::userParams.renderingParams.nPixelSamples;
+    launchParams.camera.nPixelSamples = Parameters::get()->currentParams()->renderingParams.nPixelSamples;
     launchParams.camera.position = from;
     launchParams.camera.direction = normalize(at - from);
     launchParams.camera.cosFovy = cosFovy;
@@ -159,7 +159,7 @@ void OptixRenderer::render(const std::string& fileName)
     CUDA_SYNC_CHECK();
 
     // create PNG
-    if (Parameters::userParams.renderingParams.createPicture)
+    if (Parameters::get()->currentParams()->renderingParams.createPicture)
     {
         std::vector<uint32_t> pixels;
         const size_t npixels = launchParams.frame.size.x * launchParams.frame.size.y;
@@ -183,7 +183,7 @@ void OptixRenderer::render(scal phi, scal theta)
     dir = Geometry::rotateAlongNormal(dir, mesh->meso_normal);
     launchParams.visibility.directionOut = dir;
 
-    std::string fileName = Parameters::userParams.renderingParams.createPicture ? Path::renderImg(mesh->name, launchParams, phi, theta) : "";
+    std::string fileName = Parameters::get()->currentParams()->renderingParams.createPicture ? Path::renderImg(mesh->name, launchParams, phi, theta) : "";
     render(fileName);
 }
 
@@ -280,10 +280,6 @@ void OptixRenderer::setLaunchParams(std::map<std::string, optionalParam> params)
         }
         else if (it->first == "programType") {
             launchParams.camera.programType = std::get<ProgramType>(it->second);
-        }
-        else if (it->first == "nPixelSamples") {
-            launchParams.camera.nPixelSamples = std::get<int>(it->second);
-            Parameters::userParams.renderingParams.nPixelSamples = std::get<int>(it->second);
         }
     }
 }

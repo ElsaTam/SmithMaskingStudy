@@ -17,7 +17,7 @@ MicroflakesGenerator::MicroflakesGenerator(const std::string& hfPath)
 	}
 	else
 	{
-		if (Parameters::userParams.outLevel >= OutLevel::TRACE) { PING }
+		if (Parameters::get()->currentParams()->outLevel >= OutLevel::TRACE) { PING }
 		const auto start = std::chrono::high_resolution_clock::now();
 
 		Console::out << Console::timeStamp << "Reading heightfield..." << std::endl;
@@ -51,7 +51,7 @@ MicroflakesGenerator::MicroflakesGenerator(const std::string& hfPath)
 
 TriangleMesh* MicroflakesGenerator::createModel(const gdt::vec2i gridSize) const
 {
-	if (Parameters::userParams.outLevel >= OutLevel::TRACE) { PING }
+	if (Parameters::get()->currentParams()->outLevel >= OutLevel::TRACE) { PING }
 	const auto start = std::chrono::high_resolution_clock::now();
 
 	Console::out << Console::timeStamp << "Initializing microflakes mesh..." << std::endl;
@@ -81,7 +81,7 @@ TriangleMesh* MicroflakesGenerator::createModel(const gdt::vec2i gridSize) const
 			gdt::vec3sc P = getPoint(coords);
 			gdt::vec3sc N = getSmoothNormal(coords);
 			Flake flake = createFlake(flakeSize, P, N);
-			if (Parameters::userParams.methodParams.jiggleFlakes)
+			if (Parameters::get()->currentParams()->methodParams.jiggleFlakes)
 				jiggleFlake(flake);
 			addFlake(flake, mesh);
 		}

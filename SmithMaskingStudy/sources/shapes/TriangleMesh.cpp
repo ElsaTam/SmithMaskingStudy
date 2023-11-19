@@ -176,8 +176,8 @@ vec3sc meanNormal(const std::vector<vec3sc>& normals, const std::vector<scal>& a
 vec3sc TriangleMesh::computeMesoNormal(int maxSamples) const {
     std::vector<vec3sc> pointsCloud;
     for (const gdt::vec3sc& v : vertex) {
-        if (bounds.closest_distance(v).x < Parameters::userParams.sideEffectParams.borderPercentage * bounds.span().x / 2.f
-            || bounds.closest_distance(v).y < Parameters::userParams.sideEffectParams.borderPercentage * bounds.span().y / 2.f)
+        if (bounds.closest_distance(v).x < Parameters::get()->currentParams()->sideEffectParams.borderPercentage * bounds.span().x / 2.f
+            || bounds.closest_distance(v).y < Parameters::get()->currentParams()->sideEffectParams.borderPercentage * bounds.span().y / 2.f)
         {
             continue;
         }
@@ -254,7 +254,7 @@ TriangleMesh* loadOBJ(const std::string &objFile)
         }
     }
     
-    if (Parameters::userParams.outLevel >= OutLevel::TRACE) {
+    if (Parameters::get()->currentParams()->outLevel >= OutLevel::TRACE) {
         Console::out << "[tinyobj] shape.size()  = " << shapes.size() << std::endl;
         Console::out << "[tinyobj] attributes.vertices.size() = " << attributes.vertices.size() << " (" << attributes.vertices.size() / 3 << " * 3)" << std::endl;
         Console::out << "[tinyobj] attributes.normals.size()  = " << attributes.normals.size() << " (" << attributes.normals.size() / 3 << " * 3)" << std::endl;
@@ -310,7 +310,7 @@ TriangleMesh* loadOBJ(const std::string &objFile)
     // assign the mesh
     if (_mesh->vertex.empty()) {
         delete _mesh;
-        if (Parameters::userParams.outLevel >= OutLevel::ERR)
+        if (Parameters::get()->currentParams()->outLevel >= OutLevel::ERR)
             Console::err << "Done loading obj file - no vertex found." << std::endl;
         return nullptr;
     }
@@ -372,7 +372,7 @@ TriangleMesh* createSubMesh(const TriangleMesh* _mesh, std::set<int> faceIDs)
         newMesh->bounds.extend(vtx);
     newMesh->macroArea = newMesh->bounds.span().x * newMesh->bounds.span().y;
 
-    if (Parameters::userParams.outLevel >= OutLevel::INFO) {
+    if (Parameters::get()->currentParams()->outLevel >= OutLevel::INFO) {
         Console::out << "Old mesh: " << std::endl;
         Console::out << "Vertex: " << _mesh->vertex.size() << std::endl;
         Console::out << "Faces: " << _mesh->index.size() << std::endl;

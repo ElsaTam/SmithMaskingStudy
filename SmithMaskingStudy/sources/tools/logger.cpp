@@ -36,7 +36,7 @@ std::string findFilename(const std::string& folder, unsigned int id)
 {
 	std::ostringstream oss;
 	oss << std::setfill('0') << std::setw(5) << id;
-	std::string base = std::string(magic_enum::enum_name(Parameters::userParams.methodParams.method));
+	std::string base = std::string(magic_enum::enum_name(Parameters::get()->currentParams()->methodParams.method));
 	boost::to_lower(base);
 	return folder + base + "_" + oss.str() + ".txt";
 }

@@ -56,8 +56,8 @@ StatisticsTool::~StatisticsTool() { }
 
 bool closeToEdge(const TriangleMesh* mesh, const gdt::vec3sc& point)
 {
-    return (mesh->bounds.closest_distance(point).x < Parameters::userParams.sideEffectParams.borderPercentage * mesh->bounds.span().x / 2.f
-        || mesh->bounds.closest_distance(point).y < Parameters::userParams.sideEffectParams.borderPercentage * mesh->bounds.span().y / 2.f);
+    return (mesh->bounds.closest_distance(point).x < Parameters::get()->currentParams()->sideEffectParams.borderPercentage * mesh->bounds.span().x / 2.f
+        || mesh->bounds.closest_distance(point).y < Parameters::get()->currentParams()->sideEffectParams.borderPercentage * mesh->bounds.span().y / 2.f);
 }
 
 #define STATS_PHI
@@ -68,7 +68,7 @@ bool closeToEdge(const TriangleMesh* mesh, const gdt::vec3sc& point)
 
 scal StatisticsTool::computeAnisotropy() const
 {
-    Discrete D(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage);
+    Discrete D(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage);
     const scal phiStart = D.phiStart();
     const scal phiEnd = D.phiEnd();
     const scal phiSize = D.phiSize();
@@ -114,7 +114,7 @@ void StatisticsTool::compute5Statistics()
     std::set<int>& low_cluster = sets[min_idx];                     //
 
     // macrosurface area
-    const scal border = 1. - Parameters::userParams.sideEffectParams.borderPercentage;
+    const scal border = 1. - Parameters::get()->currentParams()->sideEffectParams.borderPercentage;
     const ld A = static_cast<ld>(mesh->bounds.span().x * border * mesh->bounds.span().y * border);
 
     // statistics for faces
@@ -213,7 +213,7 @@ void StatisticsTool::compute25Statistics()
     accumulator_set<ld, stats<tag::covariance<ld, tag::covariate1> > > accCovTH;
 
     // macrosurface area
-    const scal border = 1. - Parameters::userParams.sideEffectParams.borderPercentage;
+    const scal border = 1. - Parameters::get()->currentParams()->sideEffectParams.borderPercentage;
     const ld A = static_cast<ld>(mesh->bounds.span().x * border * mesh->bounds.span().y * border);
 
     // statistics for faces
@@ -370,7 +370,7 @@ void StatisticsTool::computeStatistics()
 #endif // STATS_CORR
 
     // macrosurface area
-    const scal border = 1. - Parameters::userParams.sideEffectParams.borderPercentage;
+    const scal border = 1. - Parameters::get()->currentParams()->sideEffectParams.borderPercentage;
     const ld A = static_cast<ld>(mesh->bounds.span().x * border * mesh->bounds.span().y * border);
 
     // statistics for faces

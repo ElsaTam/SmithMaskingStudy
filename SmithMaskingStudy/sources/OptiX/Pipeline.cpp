@@ -92,7 +92,7 @@ void Pipeline::createModule(const char* ptx_path)
         exit(2);
     }
 
-    if (Parameters::userParams.outLevel >= OutLevel::INFO) {
+    if (Parameters::get()->currentParams()->outLevel >= OutLevel::INFO) {
         Console::out
             << Console::timePad << Console::indent << "ptx_path " << ptx_path << std::endl
             << Console::timePad << Console::indent << "ptx size " << ptxCode.size() << std::endl;

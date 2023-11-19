@@ -7,20 +7,20 @@ namespace Path {
 	// Paths to folders
 
 	const std::vector<int>& resolutions() {
-		return Parameters::userParams.pathParams.resolutions;
+		return Parameters::get()->currentParams()->pathParams.resolutions;
 	}
 
 
 	const std::string& objFolder() {
-		return Parameters::userParams.pathParams.objDir;
+		return Parameters::get()->currentParams()->pathParams.objDir;
 	}
 
 	const std::string& hfFolder() {
-		return Parameters::userParams.pathParams.hfDir;
+		return Parameters::get()->currentParams()->pathParams.hfDir;
 	}
 
 	const std::string& outputRootFolder() {
-		return Parameters::userParams.pathParams.outputsDir;
+		return Parameters::get()->currentParams()->pathParams.outputsDir;
 	}
 
 	std::string subdivisionFolderName(int res) {
@@ -94,7 +94,7 @@ namespace Path {
 	// Paths to files
 
 	const std::vector<std::string>& surfaceNames() {
-		return Parameters::userParams.pathParams.surfNames;
+		return Parameters::get()->currentParams()->pathParams.surfNames;
 	}
 
 	std::string objFile(const std::string& surfName, int res) {
@@ -143,10 +143,10 @@ namespace Path {
 	}
 
 	const std::string& ptxFile() {
-		return Parameters::userParams.pathParams.ptxFile;
+		return Parameters::get()->currentParams()->pathParams.ptxFile;
 	}
 	const std::string& gnuplotExe() {
-		return Parameters::userParams.pathParams.gnuplotPath;
+		return Parameters::get()->currentParams()->pathParams.gnuplotPath;
 	}
 
 	// Utils
