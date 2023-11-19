@@ -19,6 +19,8 @@ enum class OutLevel {
     ERR,
     WARNING,
     INFO,
+    SUCCESS,
+    NORMAL,
     TRACE
 };
 
