@@ -308,13 +308,15 @@ void Analyzer::G1()
     delete writer_rc;
     delete writer_smith;
 
-    // Plot 3D graph
-    PlotsGrapher::splot     (Path::G1_3D_Folder(res) + mesh->name + "_RC.png" ,                pts_rc);
-    PlotsGrapher::cmplot    (Path::G1_3D_Folder(res) + mesh->name + "_RC_colormap.png",        col_rc);
-    PlotsGrapher::splot     (Path::G1_3D_Folder(res) + mesh->name + "_Smith.png",              pts_smith);
-    PlotsGrapher::cmplot    (Path::G1_3D_Folder(res) + mesh->name + "_Smith_colormap.png",     col_smith);
-    PlotsGrapher::splotDiff (Path::G1_3D_Folder(res) + mesh->name + "_ashikhmin_diff",         pts_diff);
-    PlotsGrapher::cmplotDiff(Path::G1_3D_Folder(res) + mesh->name + "_ashikhmin_colormap.png", col_diff, "magma");
+    if (D.nPhi > 1) {
+        // Plot 3D graph
+        PlotsGrapher::splot(Path::G1_3D_Folder(res) + mesh->name + "_RC.png", pts_rc);
+        PlotsGrapher::cmplot(Path::G1_3D_Folder(res) + mesh->name + "_RC_colormap.png", col_rc);
+        PlotsGrapher::splot(Path::G1_3D_Folder(res) + mesh->name + "_Smith.png", pts_smith);
+        PlotsGrapher::cmplot(Path::G1_3D_Folder(res) + mesh->name + "_Smith_colormap.png", col_smith);
+        PlotsGrapher::splotDiff(Path::G1_3D_Folder(res) + mesh->name + "_ashikhmin_diff", pts_diff);
+        PlotsGrapher::cmplotDiff(Path::G1_3D_Folder(res) + mesh->name + "_ashikhmin_colormap.png", col_diff, "magma");
+    }
 
     // Finalize error computation
     SMAPE = normalize_error(SMAPE, D.nPhi * D.nTheta);
