@@ -58,8 +58,15 @@ namespace Console {
 	extern OutStream optixWarn;
 	extern OutStream optixErr;
 
+	void print(OutLevel level, std::string message, const char* end = "\n");
+	void printOptix(OutLevel level, std::string message, const char* end = "\n");
 
 	struct TimeStamp {
+		std::string str() {
+			std::stringstream ss;
+			ss << this;
+			return ss.str();
+		}
 		friend std::ostream& operator<< (std::ostream& os, const TimeStamp& _timeStamp)
 		{
 			auto now = std::chrono::system_clock::now();
