@@ -169,7 +169,6 @@ vec3sc meanNormal(const std::vector<vec3sc>& normals, const std::vector<scal>& a
     }
     N /= normals.size();
     N = normalize(N);
-    //Console::out << "Mean normal: " << N << std::endl;
     return N;
 }
 
@@ -232,7 +231,7 @@ TriangleMesh* loadOBJ(const std::string &objFile)
     std::vector<tinyobj::material_t> materials;
     std::string err = "";
 
-    Console::out << Console::timeStamp << "tinyobj::LoadObj..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "tinyobj::LoadObj...");
     bool readOK
         = tinyobj::LoadObj(&attributes,
                            &shapes,
@@ -248,18 +247,16 @@ TriangleMesh* loadOBJ(const std::string &objFile)
 
     // flip surface
     if (flip) {
-        Console::out << Console::timeStamp << "Flip surface..." << std::endl;
+        Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Flip surface...");
         for (int vID = 0; vID < attributes.vertices.size() / 3; vID++) {
             attributes.vertices[(size_t)(3 * vID + 2)] *= -1; // flip Z
         }
     }
     
-    if (Parameters::get()->currentParams()->outLevel >= OutLevel::TRACE) {
-        Console::out << "[tinyobj] shape.size()  = " << shapes.size() << std::endl;
-        Console::out << "[tinyobj] attributes.vertices.size() = " << attributes.vertices.size() << " (" << attributes.vertices.size() / 3 << " * 3)" << std::endl;
-        Console::out << "[tinyobj] attributes.normals.size()  = " << attributes.normals.size() << " (" << attributes.normals.size() / 3 << " * 3)" << std::endl;
-        Console::out << "[tinyobj] shape.mesh.indices.size()  = " << shapes[0].mesh.indices.size() << " (" << shapes[0].mesh.indices.size() / 3 << " * 3)" << std::endl;
-    }
+    Console::print(OutLevel::TRACE, Console::timePad + "[tinyobj] shape.size()  = " + std::to_string(shapes.size()));
+    Console::print(OutLevel::TRACE, Console::timePad + "[tinyobj] attributes.vertices.size() = " + std::to_string(attributes.vertices.size()) + " (" + std::to_string(attributes.vertices.size() / 3) + " * 3)");
+    Console::print(OutLevel::TRACE, Console::timePad + "[tinyobj] attributes.normals.size()  = " + std::to_string(attributes.normals.size()) + " (" + std::to_string(attributes.normals.size() / 3) + " * 3)");
+    Console::print(OutLevel::TRACE, Console::timePad + "[tinyobj] shape.mesh.indices.size()  = " + std::to_string(shapes[0].mesh.indices.size()) + " (" + std::to_string(shapes[0].mesh.indices.size() / 3) + " * 3)");
 
     tinyobj::shape_t& shape = shapes[0]; // only one shape
       
@@ -270,7 +267,7 @@ TriangleMesh* loadOBJ(const std::string &objFile)
     _mesh->maxArea = 0;
 
     // create mesh
-    Console::out << Console::timeStamp << "Add vertices..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Add vertices...");
     for (int faceID = 0; faceID < shape.mesh.indices.size() / 3; faceID++) {
         tinyobj::index_t idx0 = shape.mesh.indices[(size_t)(3*faceID+0)];
         tinyobj::index_t idx1 = shape.mesh.indices[(size_t)(3*faceID+1)];
@@ -289,19 +286,19 @@ TriangleMesh* loadOBJ(const std::string &objFile)
     }
 
     // normalize each vertex normal
-    Console::out << Console::timeStamp << "Normalize vertex normals..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Normalize vertex normals...");
     for (int normalID = 0; normalID < _mesh->vertex_normal.size(); ++normalID) {
         _mesh->vertex_normal[normalID] = normalize(_mesh->vertex_normal[normalID]);
     }
 
     // find the best fitting plane (and its mesonormal)
-    Console::out << Console::timeStamp << "Mesonormal..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Mesonormal...");
     _mesh->meso_normal = _mesh->computeMesoNormal(0);
 
 
     // compute normals for each triangle
     // must be done after the mesonormal, because it is used to choose the sign of the micronormals.
-    Console::out << Console::timeStamp << "Triangle normals..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Triangle normals...");
     for (int faceID = 0; faceID < _mesh->index.size(); faceID++) {
         _mesh->triangle_normal.push_back(triangleNormal(_mesh, _mesh->index[faceID]));
     }
@@ -311,12 +308,12 @@ TriangleMesh* loadOBJ(const std::string &objFile)
     if (_mesh->vertex.empty()) {
         delete _mesh;
         if (Parameters::get()->currentParams()->outLevel >= OutLevel::ERR)
-            Console::err << "Done loading obj file - no vertex found." << std::endl;
+            Console::print(OutLevel::ERR,"Done loading obj file - no vertex found.");
         return nullptr;
     }
 
     // extend the bounding box
-    Console::out << Console::timeStamp << "BBox..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "BBox...");
     for (auto vtx : _mesh->vertex)
         _mesh->bounds.extend(vtx);
     _mesh->macroArea = _mesh->bounds.span().x * _mesh->bounds.span().y;
@@ -372,17 +369,18 @@ TriangleMesh* createSubMesh(const TriangleMesh* _mesh, std::set<int> faceIDs)
         newMesh->bounds.extend(vtx);
     newMesh->macroArea = newMesh->bounds.span().x * newMesh->bounds.span().y;
 
-    if (Parameters::get()->currentParams()->outLevel >= OutLevel::INFO) {
-        Console::out << "Old mesh: " << std::endl;
-        Console::out << "Vertex: " << _mesh->vertex.size() << std::endl;
-        Console::out << "Faces: " << _mesh->index.size() << std::endl;
-        Console::out << "Bounds: " << _mesh->bounds << std::endl << std::endl;
-
-        Console::out << "New mesh: " << std::endl;
-        Console::out << "Vertex: " << newMesh->vertex.size() << std::endl;
-        Console::out << "Faces: " << newMesh->index.size() << std::endl;
-        Console::out << "Bounds: " << newMesh->bounds << std::endl << std::endl;
-    }
+    Console::print(OutLevel::INFO, Console::timeStamp.str() + "Old mesh: ");
+    Console::print(OutLevel::INFO, Console::timeStamp.str() + "Vertex: " + std::to_string(_mesh->vertex.size()));
+    Console::print(OutLevel::INFO, Console::timeStamp.str() + "Faces: " + std::to_string(_mesh->index.size()));
+    std::stringstream ss_bounds;
+    ss_bounds << _mesh->bounds;
+    Console::print(OutLevel::INFO, Console::timeStamp.str() + "Bounds: " + ss_bounds.str());
+    Console::print(OutLevel::INFO, Console::timeStamp.str() + "New mesh: ");
+    Console::print(OutLevel::INFO, Console::timeStamp.str() + "Vertex: " + std::to_string(newMesh->vertex.size()));
+    Console::print(OutLevel::INFO, Console::timeStamp.str() + "Faces: " + std::to_string(newMesh->index.size()));
+    ss_bounds.str("");
+    ss_bounds << newMesh->bounds;
+    Console::print(OutLevel::INFO, Console::timeStamp.str() + "Bounds: " + ss_bounds.str());
 
     return newMesh;
 }
@@ -521,19 +519,6 @@ void TriangleMesh::createPatches()
         vec3sc wn = fittingPlaneNormal(verticesBundles[p]);
         patches.push_back(std::make_pair(boxes[p], wn));
     }
-
-    // verification
-    /*Console::out << "Mesh:" << std::endl << bounds << std::endl;
-    Console::out << std::endl << "===========" << std::endl << std::endl;
-    for (int p = 0; p < N * N; ++p)
-    {
-        const box3sc& box = patches[p].first;
-        const vec3sc& N = patches[p].second;
-        Console::out << "Patch:" << box << std::endl;
-        Console::out << "Nombre de sommets :" << verticesBundles[p].size() << std::endl;
-        Console::out << "Normal: " << N << std::endl;
-        Console::out << "------" << std::endl;
-    }*/
 }
 
 // Check if two faces are neighbor
@@ -593,7 +578,7 @@ std::vector<int> neighborsOfFace(const TriangleMesh* mesh, int faceID)
     return neighborFaces;
 }
 
-void TriangleMesh::flatSetContainingFace(int faceID, vec3sc N, std::queue<int>& faceIDQueue, bool write) const
+void TriangleMesh::flatSetContainingFace(int faceID, vec3sc N, std::queue<int>& faceIDQueue) const
 {
     // trouver les voisins du triangle
     std::vector<int> neighbors = neighborsOfFace(this, faceID);
@@ -606,9 +591,6 @@ void TriangleMesh::flatSetContainingFace(int faceID, vec3sc N, std::queue<int>& 
             ++it;
         }
     }
-
-    if (write)
-        Console::out << neighbors.size() << " voisins trouves pour la face " << faceID << std::endl;
 }
 
 template<typename T> bool contains(std::vector<T>& v, T value) {
@@ -676,11 +658,6 @@ std::vector<std::vector<int>> TriangleMesh::flatSets(vec3sc N) const
         // si un set a ete consitue, on l'ajoute au resultat final
         if (flatSet.size() > 10) {
             sets.push_back(flatSet);
-
-            Console::out << "------- FACE " << baseFaceID << " -------" << std::endl;
-            Console::out << "Set de " << flatSet.size() << std::endl;
-            //for (int i : flatSet) Console::out << i << ", ";
-            Console::out << std::endl;
         }
 
         // on passe à la face suivante
@@ -725,7 +702,7 @@ std::vector<std::set<int>> TriangleMesh::heightSeparation(int K, std::vector<sca
     for (int k = 0; k < K; ++k) {
         clusters[k] = kmeans.getPointsIdOfCluster(k);
         centroids[k] = kmeans.getCentroidOfCluster(k)[0];
-        Console::light << Console::timePad << "Cluster " << k + 1 << " : " << clusters[k].size() << " sommets / Centroid : " << centroids[k] << std::endl;
+        Console::print(OutLevel::TRACE, Console::timePad + "Cluster " + std::to_string(k + 1) + " : " + std::to_string(clusters[k].size()) + " sommets / Centroid : " + std::to_string(centroids[k]));
     }
 
     int faceID;
@@ -842,7 +819,7 @@ TriangleMesh* createMesh(const std::string& objPath)
     TriangleMesh* mesh;
 
     // Else, building from .obj file
-    Console::out << Console::timeStamp << "Building triangle mesh..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Building triangle mesh...");
 
     mesh = loadOBJ(objPath);
 
@@ -930,25 +907,26 @@ TriangleMesh* createMesh(const std::string& objPath)
         scal rdm = ((float)rand()) / (float)RAND_MAX; // between 0 and 1
         rdm = rdm * 0.5 + 0.5; // between 0.5 and 1
         scal factor = scale_iterator->second * rdm;
-        Console::out << Console::timeStamp << "Flattening by " << factor << "..." << std::endl;
+        Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Flattening by " + std::to_string(factor) + "...");
         mesh->scale({ 1., 1., factor });
     }
     */
 
-    Console::out << Console::timeStamp << "Rotation..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Rotation...");
     mesh->rotate(normalize(vec3sc(0, 0, 1)));
 
-    Console::out << Console::timeStamp << "Scale to 64x64..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Scale to 64x64...");
     scal size = std::max({ mesh->bounds.upper.x - mesh->bounds.lower.x, mesh->bounds.upper.y - mesh->bounds.lower.y });
     scal halfSize = size / 2.;
     mesh->scale(64. / halfSize);
 
-    Console::out << Console::timeStamp << "Shift to center and min at 0..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Shift to center and min at 0...");
     mesh->translate({ -(mesh->bounds.lower.x + mesh->bounds.upper.x) / (scal)2.,
                       -(mesh->bounds.lower.y + mesh->bounds.upper.y) / (scal)2.,
                        -mesh->bounds.lower.z });
 
-    Console::out << *mesh << std::endl;
+    std::stringstream ss; ss << *mesh;
+    Console::print(OutLevel::TRACE, *mesh);
 
     return mesh;
 }
@@ -984,31 +962,8 @@ TriangleMesh* createFlatGrid()
         mesh->surfaceArea += mesh->area[mesh->area.size() - 1];
     }
 
-    for (int faceID = 0; faceID < 0; ++faceID) {
-        gdt::vec3i index = mesh->index[faceID];
-        Console::out << "      "               << mesh->vertex[index[0]] << "   //   Area : " << mesh->area[faceID] << std::endl;
-        Console::out << "[" << faceID << "]  " << mesh->vertex[index[1]] << "   //   Indx : " << index << std::endl;
-        Console::out << "      "               << mesh->vertex[index[2]] << "   //   Norm : " << mesh->triangle_normal[faceID] << std::endl;
-        Console::out << std::endl;
-    }
-    Console::out << *mesh << std::endl;
-
-    StatisticsTool stats = StatisticsTool(mesh);
-    stats.print();
-
     scal halfSize = size / 2.;
     mesh->scale(64. / halfSize);
-    for (int faceID = 0; faceID < 0; ++faceID) {
-        gdt::vec3i index = mesh->index[faceID];
-        Console::out << "      " << mesh->vertex[index[0]] << "   //   Area : " << mesh->area[faceID] << std::endl;
-        Console::out << "[" << faceID << "]  " << mesh->vertex[index[1]] << "   //   Indx : " << index << std::endl;
-        Console::out << "      " << mesh->vertex[index[2]] << "   //   Norm : " << mesh->triangle_normal[faceID] << std::endl;
-        Console::out << std::endl;
-    }
-    Console::out << *mesh << std::endl;
-
-    stats.computeStatistics();
-    stats.print();
 
     return mesh;
 }

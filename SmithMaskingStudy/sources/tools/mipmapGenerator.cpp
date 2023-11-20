@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "utils/console.h"
+#include "utils/params.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -11,15 +12,11 @@
 int mipmapLevels(int width, int height)
 {
 	if ((width == 0) || (width & (width - 1))) {
-		Console::err << std::endl
-			<< "Heightfield must be of width power of two."
-			<< std::endl << std::endl;
+		Console::print(OutLevel::ERR, "Heightfield must be of width power of two.");
 		return 0;
 	}
 	if ((height == 0) || (height & (height - 1))) {
-		Console::err << std::endl
-			<< "Heightfield must be of height power of two."
-			<< std::endl << std::endl;
+		Console::print(OutLevel::ERR, "Heightfield must be of height power of two.");
 		return 0;
 	}
 	return std::min(log2(width), log2(height));
@@ -51,7 +48,7 @@ void MipmapGenerator::generate(const std::string& filename, const std::string& i
 {
 	if (! CreateDirectoryA(outputFolder.c_str(), NULL) && ERROR_ALREADY_EXISTS != GetLastError())
 	{
-		Console::err << "Can't create folder " << outputFolder << std::endl;
+		Console::print(OutLevel::ERR, "Can't create folder " + outputFolder);
 		return;
 	}
 
@@ -78,7 +75,5 @@ void MipmapGenerator::generate(const std::string& filename, const std::string& i
 		pixels = grey;
 	}
 
-	Console::succ << std::endl
-		<< "Image saved to " << outputFolder << filename
-		<< std::endl << std::endl;
+	Console::print(OutLevel::SUCCESS, "Image saved to " + outputFolder + filename);
 }

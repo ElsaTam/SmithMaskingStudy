@@ -2,6 +2,7 @@
 
 #include <omp.h>
 #include "utils/console.h"
+#include "utils/params.h"
 
 using namespace gdt;
 
@@ -24,7 +25,7 @@ bool createVisibilityMap(const std::string& filename,
 
 bool MapsWriter::normalMap(const std::string& filename,
                            const TriangleMesh* const shape) {
-    Console::err << "No library found for writing png files." << std::endl;
+    Console::print(OutLevel::ERR, "No library found for writing png files.");
     return false;
     
     /*
@@ -107,7 +108,7 @@ bool MapsWriter::normalMap(const std::string& filename,
 bool MapsWriter::aoMap(const std::string& filename,
                        const TriangleMesh* shape,
                        int nSamples) {
-    Console::err << "No library found for writing png files." << std::endl;
+    Console::print(OutLevel::ERR, "No library found for writing png files.");
     return false;
 
     /*
@@ -216,7 +217,7 @@ bool createVisibilityMap(const std::string& filename,
                          const TriangleMesh* const shape,
                          bool fromDir, int nSamples) {
 
-    Console::err << "No library found for writing png files." << std::endl;
+    Console::print(OutLevel::ERR, "No library found for writing png files.");
     return false;
 
     /*

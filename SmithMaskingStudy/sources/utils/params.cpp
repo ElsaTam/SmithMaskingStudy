@@ -157,7 +157,7 @@ bool Parameters::checkRequired(jParser::jValue jValue) const {
 	bool requirements = true;
 	std::string methodName = "";
 	if (!jValue.contains("methodParams") || !jValue["methodParams"].contains("name")) {
-		Console::err << "methodParams.name is required." << std::endl;
+		Console::print(OutLevel::ERR, "methodParams.name is required.");
 		requirements = false;
 	}
 	else {
@@ -165,25 +165,25 @@ bool Parameters::checkRequired(jParser::jValue jValue) const {
 	}
 	if (jValue.contains("pathParams")) {
 		if (!jValue["pathParams"].contains("objDir")) {
-			Console::err << "pathParams.objDir is required." << std::endl;
+			Console::print(OutLevel::ERR, "pathParams.objDir is required.");
 			requirements = false;
 		}
 		if ((methodName.compare("GENERATE_MICROFLAKES") == 0) && (!jValue["pathParams"].contains("hfDir"))) {
-			Console::err << "pathParams.hfDir is required with method GENERATE_MICROFLAKES." << std::endl;
+			Console::print(OutLevel::ERR, "pathParams.hfDir is required with method GENERATE_MICROFLAKES.");
 			requirements = false;
 		}
 		if (!jValue["pathParams"].contains("outputsDir")) {
-			Console::err << "pathParams.outputsDir is required." << std::endl;
+			Console::print(OutLevel::ERR, "pathParams.outputsDir is required.");
 			requirements = false;
 		}
 		if (jValue["pathParams"].contains("surfMin") || jValue["pathParams"].contains("surfMax")) {
 			if (jValue["pathParams"]["surfMin"].as_int() > jValue["pathParams"]["surfMax"].as_int() && !jValue["pathParams"].contains("surfNames")) {
-				Console::err << "At least on input surface is required (currently, pathParams.surfMin > pathParams.surfMax, and pathParams.surfNames is undefined. No surface names can be selected." << std::endl;
+				Console::print(OutLevel::ERR, "At least on input surface is required (currently, pathParams.surfMin > pathParams.surfMax, and pathParams.surfNames is undefined. No surface names can be selected.");
 				requirements = false;
 			}
 		}
 		else if (!jValue["pathParams"].contains("surfNames") && !(jValue["pathParams"].contains("surfMin") || jValue["pathParams"].contains("surfMax"))) {
-			Console::err << "At least on input surface is required (can be defined with pathParams.surfNames, or pathParams.surfMin and pathParams.surfMax)." << std::endl;
+			Console::print(OutLevel::ERR, "At least on input surface is required (can be defined with pathParams.surfNames, or pathParams.surfMin and pathParams.surfMax).");
 			requirements = false;
 		}
 		return requirements;

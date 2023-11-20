@@ -13,14 +13,14 @@ MicroflakesGenerator::MicroflakesGenerator(const std::string& hfPath)
 {
 	if (!Path::exists(hfPath))
 	{
-		Console::err << Console::timePad << "File not found: " << hfPath << std::endl;
+		Console::print(OutLevel::ERR, Console::timePad + "File not found: " + hfPath);
 	}
 	else
 	{
 		if (Parameters::get()->currentParams()->outLevel >= OutLevel::TRACE) { PING }
 		const auto start = std::chrono::high_resolution_clock::now();
 
-		Console::out << Console::timeStamp << "Reading heightfield..." << std::endl;
+		Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Reading heightfield...");
 
 		int channels;
 		unsigned char* data = stbi_load(hfPath.c_str(), &(hf.width), &(hf.height), &channels, 1);
@@ -54,7 +54,7 @@ TriangleMesh* MicroflakesGenerator::createModel(const gdt::vec2i gridSize) const
 	if (Parameters::get()->currentParams()->outLevel >= OutLevel::TRACE) { PING }
 	const auto start = std::chrono::high_resolution_clock::now();
 
-	Console::out << Console::timeStamp << "Initializing microflakes mesh..." << std::endl;
+	Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Initializing microflakes mesh...");
 
 	// mesh initialisation
 	TriangleMesh* mesh = new TriangleMesh;
@@ -67,7 +67,7 @@ TriangleMesh* MicroflakesGenerator::createModel(const gdt::vec2i gridSize) const
 	scal stepY = (scal)(hf.height - 1 - 2 * border) / (scal)(gridSize.y - 1);
 	scal flakeSize = std::min(stepX, stepY);
 
-	Console::out << Console::timeStamp << "Creating " << gridSize.x * gridSize.y << " flakes..." << std::endl;
+	Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Creating " + std::to_string(gridSize.x * gridSize.y) + " flakes...");
 
 	// create the flakes
 	for (int i = 0; i < gridSize.x; ++i)
@@ -89,12 +89,12 @@ TriangleMesh* MicroflakesGenerator::createModel(const gdt::vec2i gridSize) const
 
 	mesh->surfaceArea = flakeSize * gridSize.x * gridSize.y;
 
-	Console::out << Console::timeStamp << "Computing mesonormal..." << std::endl;
+	Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Computing mesonormal...");
 
 	// compute the mesonormal
 	mesh->meso_normal = fittingPlaneNormal(mesh->vertex);
 
-	Console::out << Console::timeStamp << "Extending BBox..." << std::endl;
+	Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Extending BBox...");
 
 	// extend the bounding box
 	for (auto vtx : mesh->vertex)

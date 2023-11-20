@@ -184,7 +184,6 @@ void StatisticsTool::compute5Statistics()
     const time_point time_end = std::chrono::high_resolution_clock::now();
     const Duration time_duration = Duration(time_start, time_end);
     LOG_MESSAGE("5 features computed in " + time_duration.str());
-    Console::out << "5 features computed in " << time_duration.str() << std::endl;
 }
 
 void StatisticsTool::compute25Statistics()
@@ -336,7 +335,6 @@ void StatisticsTool::compute25Statistics()
     const time_point time_end = std::chrono::high_resolution_clock::now();
     const Duration time_duration = Duration(time_start, time_end);
     LOG_MESSAGE("25 features computed in " + time_duration.str());
-    Console::out << "25 features computed in " << time_duration.str() << std::endl;
 }
 
 
@@ -660,8 +658,7 @@ void StatisticsTool::toCSV(csv::CSVWriter* writer) {
 
 
 void StatisticsTool::print(OutLevel level) {
-    std::stringstream ss;
-    ss << *this;
+    std::stringstream ss; ss << *this;
     Console::print(level, ss.str());
 }
 

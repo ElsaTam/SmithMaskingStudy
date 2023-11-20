@@ -1,5 +1,6 @@
 #include "tools/objWriter.h"
 #include "utils/console.h"
+#include "utils/params.h"
 
 #include <fstream>
 
@@ -32,5 +33,5 @@ void ObjWriter::writeObj(const std::string& filename, const TriangleMesh* mesh)
 	}
 
 	file.close();
-	Console::succ << Console::timeStamp << "OBJ written at: " << filename << std::endl;
+	Console::print(OutLevel::SUCCESS, "OBJ written at: " + filename);
 }

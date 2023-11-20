@@ -197,6 +197,7 @@ namespace Path {
 		}
 	}
 	bool checkPaths(bool print) {
+		print = print && Parameters::get()->currentParams()->outLevel > OutLevel::NO_OUTPUT;
 		bool allPathCorrects = true;
 		if (print) Console::out << "----- Root folders -----" << std::endl;
 		allPathCorrects = checkFolder(logs_Folder(), print)             && allPathCorrects;

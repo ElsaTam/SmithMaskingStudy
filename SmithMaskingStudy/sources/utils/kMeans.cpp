@@ -151,7 +151,7 @@ void KMeans<dim>::run(std::vector<gdt::vec_t<scal, dim>>& all_points, std::vecto
         }
     }
 
-    Console::out << Console::timePad << "Running K-Means Clustering.." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timePad + "Running K-Means Clustering..");
 
     int iter = 1;
     while (true)
@@ -204,7 +204,7 @@ void KMeans<dim>::run(std::vector<gdt::vec_t<scal, dim>>& all_points, std::vecto
 
         if (done || iter >= iters)
         {
-            Console::light << Console::timePad << "Clustering completed in iteration : " << iter << std::endl;
+            Console::print(OutLevel::TRACE, Console::timePad + "Clustering completed in iteration : " + std::to_string(iter));
             break;
         }
         iter++;

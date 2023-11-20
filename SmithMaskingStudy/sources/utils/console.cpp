@@ -82,16 +82,16 @@ namespace Console {
 				Console::optixOut << message << end;
 				break;
 			case OutLevel::ERR:
-				Console::optixErr << "[ERROR] " << message << end;
+				Console::optixErr << Console::timePad << "[ERROR] " << message << end;
 				break;
 			case OutLevel::WARNING:
-				Console::optixWarn << "[WARNING] " << message << end;
+				Console::optixWarn << Console::timePad << "[WARNING] " << message << end;
 				break;
 			case OutLevel::INFO:
 				Console::optixInfo << message << end;
 				break;
 			case OutLevel::SUCCESS:
-				Console::optixSucc << "[SUCCESS] " << message << end;
+				Console::optixSucc << Console::timePad << "[SUCCESS] " << message << end;
 				break;
 			case OutLevel::NORMAL:
 				Console::optixOut << message << end;
