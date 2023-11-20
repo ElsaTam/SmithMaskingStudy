@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <ctime>
 #include <chrono>
+#include "utils/params.h"
 
 namespace Console {
 

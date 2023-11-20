@@ -4,6 +4,7 @@
 #include <vector>
 #include "tools/csvWriter.h"
 #include "shapes/TriangleMesh.h"
+#include "utils/params.h"
 
 
 /**

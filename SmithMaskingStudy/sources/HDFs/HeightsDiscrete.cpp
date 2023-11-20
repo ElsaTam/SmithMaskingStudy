@@ -234,7 +234,7 @@ scal HeightsDiscrete::findValue(const std::vector<std::vector<float>>& V, const 
 
 HeightsDiscrete::HeightsDiscrete(const TriangleMesh& mesh, scal borderPercentage)
 {
-    Console::print(OutLevel::TRACE, Console::timeStamp + "Building Discrete HDF from mesh...");
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Building Discrete HDF from mesh...");
 
     scal phiStep = (phiEnd() - phiStart()) / (scal)phiSize();
     scal thetaStep = (thetaEnd() - thetaStart()) / (scal)thetaSize();

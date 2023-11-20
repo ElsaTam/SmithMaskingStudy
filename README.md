@@ -11,7 +11,6 @@ Things to do/finish:
     <li>Readme (installation, dependencies, database, links, etc.)</li>
     <li>Cleaning code
         <ul>
-            <li>Respect outLevel in console</li>
             <li>Check manually closed files<li>
         </ul>
     </li>

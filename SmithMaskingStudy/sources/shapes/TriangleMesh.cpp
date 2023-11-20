@@ -926,7 +926,7 @@ TriangleMesh* createMesh(const std::string& objPath)
                        -mesh->bounds.lower.z });
 
     std::stringstream ss; ss << *mesh;
-    Console::print(OutLevel::TRACE, *mesh);
+    Console::print(OutLevel::TRACE, ss.str());
 
     return mesh;
 }
