@@ -20,35 +20,42 @@ void help() {
 
 void example() {
     std::cout << "{" << std::endl;
-    std::cout << "    \"userParams\": {" << std::endl;
-    std::cout << "        \"method\": \"GLOBAL_VISIBILITY\"," << std::endl;
-    std::cout << "        \"outLevel\" : \"TRACE\"," << std::endl;
-    std::cout << "        \"log\" : false," << std::endl;
-    std::cout << "        \"pathParams\": {" << std::endl;
-    std::cout << "            \"objNames\": [\"PerTex/001.obj\", \"PerTex/002.obj\"]," << std::endl;
-    std::cout << "            \"objMin\" : 3," << std::endl;
-    std::cout << "            \"objMax\" : 10," << std::endl;
-    std::cout << "            \"inputsFolder\" : \"../../inputs/\"," << std::endl;
-    std::cout << "            \"outputsFolder\" : \"../../outputs/\"" << std::endl;
-    std::cout << "        }," << std::endl;
-    std::cout << "        \"directionParams\" : {" << std::endl;
-    std::cout << "            \"phiStart\": 0," << std::endl;
-    std::cout << "            \"phiEnd\" : 3.141593," << std::endl;
-    std::cout << "            \"nPhiSamples\" : 1," << std::endl;
-    std::cout << "            \"thetaStart\" : -1.570796," << std::endl;
-    std::cout << "            \"thetaEnd\" : 1.570796," << std::endl;
-    std::cout << "            \"nThetaSamples\" : 10" << std::endl;
-    std::cout << "        }," << std::endl;
-    std::cout << "        \"sideEffectParams\": {" << std::endl;
-    std::cout << "            \"borderPercentage\": 0.5," << std::endl;
-    std::cout << "            \"BBox\" : true" << std::endl;
-    std::cout << "        }," << std::endl;
-    std::cout << "        \"renderingParams\" : {" << std::endl;
-    std::cout << "            \"renderSize\": [1000, 1000] ," << std::endl;
-    std::cout << "            \"nPixelSamples\" : 16," << std::endl;
-    std::cout << "            \"createPicture\" : false" << std::endl;
-    std::cout << "        }" << std::endl;
-    std::cout << "    }" << std::endl;
+    std::cout << "\t'userParams': [" << std::endl;
+    std::cout << "\t\t{" << std::endl;
+    std::cout << "\t\t\t'methodParams': {" << std::endl;
+    std::cout << "\t\t\t\t'name': 'G1'" << std::endl;
+    std::cout << "\t\t\t}," << std::endl;
+    std::cout << "\t\t\t'pathParams': {" << std::endl;
+    std::cout << "\t\t\t\t'objDir'     : 'path/to/obj/directory/'," << std::endl;
+    std::cout << "\t\t\t\t'outputsDir' : 'path/to/outputs/directory/'," << std::endl;
+    std::cout << "\t\t\t\t'surfNames'  : ['subpath/to/surfA.obj', 'subpath/to/surfB.obj']," << std::endl;
+    std::cout << "\t\t\t\t'surfMin'    : 1," << std::endl;
+    std::cout << "\t\t\t\t'surfMax'    : 10," << std::endl;
+    std::cout << "\t\t\t\t'resolutions': [8, 9, 10]," << std::endl;
+    std::cout << "\t\t\t\t'ptxFile'    : './sources/cuda/devicePrograms.cu.ptx'," << std::endl;
+    std::cout << "\t\t\t}," << std::endl;
+    std::cout << "\t\t\t'directionParams': {" << std::endl;
+    std::cout << "\t\t\t\t'phiStart'     : 0," << std::endl;
+    std::cout << "\t\t\t\t'phiEnd'       : 6.283185," << std::endl;
+    std::cout << "\t\t\t\t'nPhiSamples'  : 400," << std::endl;
+    std::cout << "\t\t\t\t'thetaStart'   : 0," << std::endl;
+    std::cout << "\t\t\t\t'thetaEnd'     : 1.570796," << std::endl;
+    std::cout << "\t\t\t\t'nThetaSamples': 100" << std::endl;
+    std::cout << "\t\t\t}," << std::endl;
+    std::cout << "\t\t\t'sideEffectParams': {" << std::endl;
+    std::cout << "\t\t\t\t'borderPercentage': 0.2," << std::endl;
+    std::cout << "\t\t\t\t'BBox'            : false" << std::endl;
+    std::cout << "\t\t\t}," << std::endl;
+    std::cout << "\t\t\t'renderingParams': {" << std::endl;
+    std::cout << "\t\t\t\t'renderSize'   : [1024, 1024]," << std::endl;
+    std::cout << "\t\t\t\t'nPixelSamples': 4," << std::endl;
+    std::cout << "\t\t\t\t'createPicture': false," << std::endl;;
+    std::cout << "\t\t\t\t'useSmooth'    : false" << std::endl;
+    std::cout << "\t\t\t}," << std::endl;
+    std::cout << "\t\t\t'outLevel': 'INFO'," << std::endl;
+    std::cout << "\t\t\t'log'     : false" << std::endl;
+    std::cout << "\t\t}" << std::endl;
+    std::cout << "\t]" << std::endl;
     std::cout << "}" << std::endl;
 }
 
@@ -60,7 +67,7 @@ void moveFiles(const std::string& src, const std::string& target)
     }
     catch (std::exception& e)
     {
-        Console::err << "[ERROR] " << e.what() << std::endl;
+        Console::print(OutLevel::ERR, e.what());
     }
 }
 
@@ -72,22 +79,21 @@ void cleanDirectory(const std::string& path)
             std::filesystem::remove_all(entry.path());
     }
     catch (std::exception& e) {
-        Console::err << "[ERROR] " << e.what() << std::endl;
+        Console::print(OutLevel::ERR, e.what());
     }
 }
 
-void run(const UserParams& params) {
+void run() {
 
-    Console::info << Console::line << Console::line;
-    Console::info << "Method " << std::string(magic_enum::enum_name(Parameters::userParams.method)) << std::endl;
-    Console::info << Console::line << std::endl;
+    Console::print(OutLevel::INFO, Console::line);
+    Console::print(OutLevel::INFO, "Method " + std::string(magic_enum::enum_name(Parameters::get()->currentParams()->methodParams.method)));
+    Console::print(OutLevel::INFO, Console::line);
 
-    bool useGPU = (params.method == Method::G1)
-        || (params.method == Method::GAF)
-        //|| (params.method == Method::TABULATION)
-        //|| (params.method == Method::FEATURES)
-        || (params.method == Method::AMBIENT_OCCLUSION)
-        || (params.method == Method::GENERATE_MICROFLAKES);
+    bool useGPU = (Parameters::get()->currentParams()->methodParams.method == Method::G1)
+        || (Parameters::get()->currentParams()->methodParams.method == Method::GAF)
+        || (Parameters::get()->currentParams()->methodParams.method == Method::FEATURES && Parameters::get()->currentParams()->methodParams.computeError)
+        || (Parameters::get()->currentParams()->methodParams.method == Method::FULL_PIPELINE)
+        || (Parameters::get()->currentParams()->methodParams.method == Method::AMBIENT_OCCLUSION);
 
     Analyzer analyzer(nullptr, useGPU);
 
@@ -97,29 +103,36 @@ void run(const UserParams& params) {
         // for each resolution
         for (int res : Path::resolutions())
         {
-            Console::out << Console::shortline;
-            Console::out << surfName << ", " << res << " subdivisions" << std::endl;
-            Console::out << Console::shortline << std::endl;
-            continue;
+            Console::print(OutLevel::NORMAL, Console::shortline);
+            Console::print(OutLevel::NORMAL, surfName + ", " + std::to_string(res) + " subdivisions");
+            Console::print(OutLevel::NORMAL, Console::shortline);
 
             try {
                 TriangleMesh* mesh;
-                if (params.method == Method::GENERATE_MICROFLAKES) {
+                if (Parameters::get()->currentParams()->methodParams.method == Method::GENERATE_MICROFLAKES) {
                     LOG_NAME(Path::hfFolder(), surfName);
-                    MicroflakesGenerator generator(Path::hfFile(surfName));
+                    const std::string& hfPath = Path::hfFile(surfName);
+                    if (!Path::isFile(hfPath)) {
+                        throw std::runtime_error("File not found: " + hfPath);
+                    }
+                    MicroflakesGenerator generator(hfPath);
                     int size = pow(2, res);
                     mesh = generator.createModel({ size, size });
                 }
                 else {
                     LOG_NAME(Path::objFolder(), surfName);
-                    mesh = createMesh(Path::objFile(surfName, res));
+                    const std::string& objPath = Path::objFile(surfName, res);
+                    if (!Path::isFile(objPath)) {
+                        throw std::runtime_error("File not found: " + objPath);
+                    }
+                    mesh = createMesh(objPath);
                 }
 
                 LOG_OBJ(mesh);
 
                 analyzer.setGeo(mesh);
 
-                switch (params.method) {
+                switch (Parameters::get()->currentParams()->methodParams.method) {
                 case Method::G1:
                     analyzer.G1();
                     break;
@@ -133,7 +146,7 @@ void run(const UserParams& params) {
                     analyzer.ambientOcclusion();
                     break;
                 case Method::FEATURES:
-                    analyzer.statistics(true);
+                    analyzer.features();
                     break;
                 case Method::GENERATE_MICROFLAKES:
                 {
@@ -150,11 +163,10 @@ void run(const UserParams& params) {
                 }
                 delete mesh;
 
-                Console::succ << Console::timeStamp << "Done with " << surfName << std::endl;
+                Console::print(OutLevel::SUCCESS, Console::timeStamp.str() + "Done with " + surfName);
             }
             catch (const std::exception& e) {
-                if (params.outLevel >= OutLevel::ERR)
-                    Console::err << e.what() << std::endl;
+                Console::print(OutLevel::ERR, e.what());
                 LOG_ERROR(e.what());
             }
         }
@@ -174,14 +186,14 @@ void createFolder(const std::string& path, bool withSubdivisions) {
 }
 
 bool createOutputFolders() {
-    Console::out << "Create folders : " << Path::outputRootFolder() << std::endl;
+    Console::print(OutLevel::TRACE, "Create folders : " + Path::outputRootFolder());
     // check if root exists :
     if (! Path::exists(Path::outputRootFolder())) {
-        Console::err << "Incorrect output path: " << Path::outputRootFolder() << std::endl;
+        Console::print(OutLevel::ERR, "Incorrect output path: " + Path::outputRootFolder());
         return false;
     }
     if (! Path::isFolder(Path::outputRootFolder())) {
-        Console::err << "Output path is not a directory: " << Path::outputRootFolder() << std::endl;
+        Console::print(OutLevel::ERR, "Output path is not a directory: " + Path::outputRootFolder());
         return false;
     }
 
@@ -208,11 +220,11 @@ bool createOutputFolders() {
     createFolder(Path::ambientOcclusion_Folder(), true);
 
     // statistics
-    createFolder(Path::statistics_Folder(), true);
+    createFolder(Path::features_Folder(), true);
 
     if (!Path::checkPaths()) {
         Path::checkPaths(true);
-        Console::err << "There were issues while creating folders. Please correct the paths manually before restarting the program." << std::endl;
+        Console::print(OutLevel::ERR, "There were issues while creating folders. Please correct the paths manually before restarting the program.");
         return false;
     }
 
@@ -226,39 +238,43 @@ int main(int argc, char* argv[]) {
 #endif
 
     if (argc == 1) {
-        Console::err << "No input file has been given." << std::endl;
+        Console::print(OutLevel::ERR, "No input file has been given.");
         return 0;
     }
 
     srand(time(0));
 
 
-    std::vector<std::string> files;
+    std::string file = "";
     for (int i = 1; i < argc; ++i) {
-        if (files.empty() && (std::strcmp(argv[i], "-h") == 0 || std::strcmp(argv[i], "--help") == 0)) {
+        if (file.empty() && (std::strcmp(argv[i], "-h") == 0 || std::strcmp(argv[i], "--help") == 0)) {
             help();
             return 0;
         }
-        else if (files.empty() && (std::strcmp(argv[i], "-e") == 0 || std::strcmp(argv[i], "--example") == 0)) {
+        else if (file.empty() && (std::strcmp(argv[i], "-e") == 0 || std::strcmp(argv[i], "--example") == 0)) {
             example();
             return 0;
         }
+        else if (file.empty()) {
+            file = argv[i];
+        }
         else {
-            files.push_back(argv[i]);
+            Console::print(OutLevel::ERR, "Unknown argument " + std::string(argv[i]) + " (parameters file has already been provided: " + file + ")");
         }
     }
 
-    Parameters parameters(files);
+    Parameters* parameters = Parameters::get();
+    parameters->parse(file);
 
-    for (int launch = 0; launch < parameters.getNumberOfLaunchs(); ++launch)
+    for (int launch = 0; launch < parameters->size(); ++launch)
     {
-        const UserParams& userParams = parameters.getParamsForLaunch(launch);
+        parameters->setIndex(launch);
 
         if (createOutputFolders()) {
             Logger::getInstance().setFolder(Path::logs_Folder());
-            Logger::getInstance().enable(userParams.log);
-            run(userParams);
-            Console::out << std::endl << std::endl;
+            Logger::getInstance().enable(Parameters::get()->currentParams()->log);
+            run();
+            Console::print(OutLevel::NORMAL, "\n");
         }
     }
 

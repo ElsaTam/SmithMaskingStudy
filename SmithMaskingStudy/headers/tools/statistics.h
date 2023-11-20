@@ -4,6 +4,7 @@
 #include <vector>
 #include "tools/csvWriter.h"
 #include "shapes/TriangleMesh.h"
+#include "utils/params.h"
 
 
 /**
@@ -23,7 +24,7 @@ private:
     const TriangleMesh* mesh;
 
     // error
-    scal m_error{ 0 };
+    ld m_error{ 0 };
 
     // phi
     ld m_phiAnisotropy{ 0 };
@@ -92,5 +93,5 @@ public:
     static void CSVHeader(csv::CSVWriter* writer);
     void toCSV(csv::CSVWriter* writer);
 
-    void print();
+    void print(OutLevel level);
 };

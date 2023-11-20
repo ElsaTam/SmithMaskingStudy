@@ -65,7 +65,7 @@ scal Uniform::pdf(const vec3sc& w, float u1, float u2) const
 */
 scal Uniform::G1(const vec3sc& w, const vec3sc& wh) const
 {
-    Console::err << "[Error] Uniform::G1 not implemented." << std::endl;
+    Console::print(OutLevel::ERR, "Uniform::G1 not implemented.");
     exit(EXIT_FAILURE);
 }
 
@@ -79,7 +79,7 @@ scal Uniform::G1(const vec3sc& w, const vec3sc& wh) const
 */
 scal Uniform::GAFcorrelated(const vec3sc& wi, const vec3sc& wo, const vec3sc& wh) const
 {
-    Console::err << "[Error] Uniform::GAFcorrelated not implemented." << std::endl;
+    Console::print(OutLevel::ERR, "Uniform::GAFcorrelated not implemented.");
     exit(EXIT_FAILURE);
 }
 

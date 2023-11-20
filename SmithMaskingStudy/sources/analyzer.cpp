@@ -13,7 +13,7 @@
 
 
 #define ENTER                                                                 \
-    if (Parameters::userParams.outLevel >= OutLevel::TRACE) { PING }          \
+    if (Parameters::get()->currentParams()->outLevel >= OutLevel::TRACE) { PING }          \
     const auto start = std::chrono::high_resolution_clock::now();
 
 #define GPU_ENTER                                                             \
@@ -28,32 +28,31 @@
 
 void INFO_PHI(scal phi, int i, size_t nPhi)
 {
-    if (Parameters::userParams.outLevel >= OutLevel::INFO) {
-        Console::light << Console::timePad << Console::indent;
-        Console::light << "(" << std::setfill(' ')
-            << std::setw(std::to_string(nPhi).length()) << i << " / " << nPhi << ") ";
-        Console::light << "phi = " << phi << std::endl;
-    }
+    std::stringstream ss;
+    ss << Console::timePad << Console::indent;
+    ss << "(" << std::setfill(' ') << std::setw(std::to_string(nPhi).length()) << i << " / " << nPhi << ") ";
+    ss << "phi = " << phi;
+    Console::print(OutLevel::TRACE, ss.str());
 }
 
 
 Analyzer::Analyzer(TriangleMesh* _mesh, bool useGPU)
 {
     DIn = {};
-    DIn.phiStart   = Parameters::userParams.directionInParams.phiStart;
-    DIn.phiRange   = Parameters::userParams.directionInParams.phiEnd - DIn.phiStart;
-    DIn.thetaStart = Parameters::userParams.directionInParams.thetaStart;
-    DIn.thetaRange = Parameters::userParams.directionInParams.thetaEnd - DIn.thetaStart;
-    DIn.nPhi       = Parameters::userParams.directionInParams.nPhiSamples;
-    DIn.nTheta     = Parameters::userParams.directionInParams.nThetaSamples;
+    DIn.phiStart   = Parameters::get()->currentParams()->directionInParams.phiStart;
+    DIn.phiRange   = Parameters::get()->currentParams()->directionInParams.phiEnd - DIn.phiStart;
+    DIn.thetaStart = Parameters::get()->currentParams()->directionInParams.thetaStart;
+    DIn.thetaRange = Parameters::get()->currentParams()->directionInParams.thetaEnd - DIn.thetaStart;
+    DIn.nPhi       = Parameters::get()->currentParams()->directionInParams.nPhiSamples;
+    DIn.nTheta     = Parameters::get()->currentParams()->directionInParams.nThetaSamples;
 
     DOut = {};
-    DOut.phiStart   = Parameters::userParams.directionOutParams.phiStart;
-    DOut.phiRange   = Parameters::userParams.directionOutParams.phiEnd - DOut.phiStart;
-    DOut.thetaStart = Parameters::userParams.directionOutParams.thetaStart;
-    DOut.thetaRange = Parameters::userParams.directionOutParams.thetaEnd - DOut.thetaStart;
-    DOut.nPhi       = Parameters::userParams.directionOutParams.nPhiSamples;
-    DOut.nTheta     = Parameters::userParams.directionOutParams.nThetaSamples;
+    DOut.phiStart   = Parameters::get()->currentParams()->directionOutParams.phiStart;
+    DOut.phiRange   = Parameters::get()->currentParams()->directionOutParams.phiEnd - DOut.phiStart;
+    DOut.thetaStart = Parameters::get()->currentParams()->directionOutParams.thetaStart;
+    DOut.thetaRange = Parameters::get()->currentParams()->directionOutParams.thetaEnd - DOut.thetaStart;
+    DOut.nPhi       = Parameters::get()->currentParams()->directionOutParams.nPhiSamples;
+    DOut.nTheta     = Parameters::get()->currentParams()->directionOutParams.nThetaSamples;
 
     D = DOut;
 
@@ -81,12 +80,12 @@ void Analyzer::setGeo(TriangleMesh* _mesh)
     if (mesh && optixRenderer) {
         time_point tmp_start = std::chrono::high_resolution_clock::now();
         optixRenderer->setGeo(mesh);
-        optixRenderer->resize(Parameters::userParams.renderingParams.renderSize);
+        optixRenderer->resize(Parameters::get()->currentParams()->renderingParams.renderSize);
         time_point tmp_end = std::chrono::high_resolution_clock::now();
         Duration tmp_duration = Duration(tmp_start, tmp_end);
         LOG_MESSAGE("Analyzer geo prepared in " + tmp_duration.str());
     }
-    Console::out << std::endl;
+    Console::print(OutLevel::NORMAL, "");
 }
 
 
@@ -97,14 +96,14 @@ void Analyzer::setGeo(TriangleMesh* _mesh)
 void Analyzer::prepareGPU()
 {
     if (optixRenderer == nullptr) {
-        if (Parameters::userParams.outLevel >= OutLevel::TRACE) { PING }
+        if (Parameters::get()->currentParams()->outLevel >= OutLevel::TRACE) { PING }
         time_point tmp_start = std::chrono::high_resolution_clock::now();
         optixRenderer = new OptixRenderer(mesh);
         time_point tmp_end = std::chrono::high_resolution_clock::now();
         Duration tmp_duration = Duration(tmp_start, tmp_end);
         LOG_MESSAGE("OptixRenderer built in " + tmp_duration.str());
     }
-    optixRenderer->resize(Parameters::userParams.renderingParams.renderSize);
+    optixRenderer->resize(Parameters::get()->currentParams()->renderingParams.renderSize);
 }
 
 // ------------------------------------------------------------------------- //
@@ -113,16 +112,16 @@ void Analyzer::prepareGPU()
 
 void Analyzer::logRenderingInfo() const
 {
-    switch (Parameters::userParams.method)
+    switch (Parameters::get()->currentParams()->methodParams.method)
     {
     case Method::G1:
     case Method::FULL_PIPELINE:
-        LOG_MESSAGE("nPhi=" + std::to_string(Parameters::userParams.directionOutParams.nPhiSamples)
-            + ", phiStart=" + std::to_string(Parameters::userParams.directionOutParams.phiStart)
-            + ", phiEnd=" + std::to_string(Parameters::userParams.directionOutParams.phiEnd));
-        LOG_MESSAGE("nTheta=" + std::to_string(Parameters::userParams.directionOutParams.nThetaSamples)
-            + ", thetaStart=" + std::to_string(Parameters::userParams.directionOutParams.thetaStart)
-            + ", thetaEnd=" + std::to_string(Parameters::userParams.directionOutParams.thetaEnd));
+        LOG_MESSAGE("nPhi=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.nPhiSamples)
+            + ", phiStart=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.phiStart)
+            + ", phiEnd=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.phiEnd));
+        LOG_MESSAGE("nTheta=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.nThetaSamples)
+            + ", thetaStart=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.thetaStart)
+            + ", thetaEnd=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.thetaEnd));
         break;
 
     case Method::D_TABULATION:
@@ -136,18 +135,18 @@ void Analyzer::logRenderingInfo() const
 
     case Method::GAF:
     case Method::FEATURES:
-        LOG_MESSAGE("IN_nPhi=" + std::to_string(Parameters::userParams.directionInParams.nPhiSamples)
-            + ", IN_phiStart=" + std::to_string(Parameters::userParams.directionInParams.phiStart)
-            + ", IN_phiEnd=" + std::to_string(Parameters::userParams.directionInParams.phiEnd));
-        LOG_MESSAGE("IN_nTheta=" + std::to_string(Parameters::userParams.directionInParams.nThetaSamples)
-            + ", IN_thetaStart=" + std::to_string(Parameters::userParams.directionInParams.thetaStart)
-            + ", IN_thetaEnd=" + std::to_string(Parameters::userParams.directionInParams.thetaEnd));
-        LOG_MESSAGE("OUT_nPhi=" + std::to_string(Parameters::userParams.directionOutParams.nPhiSamples)
-            + ", OUT_phiStart=" + std::to_string(Parameters::userParams.directionOutParams.phiStart)
-            + ", OUT_phiEnd=" + std::to_string(Parameters::userParams.directionOutParams.phiEnd));
-        LOG_MESSAGE("OUT_nTheta=" + std::to_string(Parameters::userParams.directionOutParams.nThetaSamples)
-            + ", OUT_thetaStart=" + std::to_string(Parameters::userParams.directionOutParams.thetaStart)
-            + ", OUT_thetaEnd=" + std::to_string(Parameters::userParams.directionOutParams.thetaEnd));
+        LOG_MESSAGE("IN_nPhi=" + std::to_string(Parameters::get()->currentParams()->directionInParams.nPhiSamples)
+            + ", IN_phiStart=" + std::to_string(Parameters::get()->currentParams()->directionInParams.phiStart)
+            + ", IN_phiEnd=" + std::to_string(Parameters::get()->currentParams()->directionInParams.phiEnd));
+        LOG_MESSAGE("IN_nTheta=" + std::to_string(Parameters::get()->currentParams()->directionInParams.nThetaSamples)
+            + ", IN_thetaStart=" + std::to_string(Parameters::get()->currentParams()->directionInParams.thetaStart)
+            + ", IN_thetaEnd=" + std::to_string(Parameters::get()->currentParams()->directionInParams.thetaEnd));
+        LOG_MESSAGE("OUT_nPhi=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.nPhiSamples)
+            + ", OUT_phiStart=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.phiStart)
+            + ", OUT_phiEnd=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.phiEnd));
+        LOG_MESSAGE("OUT_nTheta=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.nThetaSamples)
+            + ", OUT_thetaStart=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.thetaStart)
+            + ", OUT_thetaEnd=" + std::to_string(Parameters::get()->currentParams()->directionOutParams.thetaEnd));
         break;
 
     case Method::AMBIENT_OCCLUSION:
@@ -157,9 +156,9 @@ void Analyzer::logRenderingInfo() const
         break;
     }
 
-    LOG_MESSAGE("NUM_PIXEL_SAMPLES=" + std::to_string(Parameters::userParams.renderingParams.nPixelSamples)
-        + ", Frame=[" + std::to_string(Parameters::userParams.renderingParams.renderSize.x) + "x" + std::to_string(Parameters::userParams.renderingParams.renderSize.y) + "]"
-        + ", N_SAMPLES=" + std::to_string(Parameters::userParams.renderingParams.nPixelSamples * Parameters::userParams.renderingParams.renderSize.x * Parameters::userParams.renderingParams.renderSize.y));
+    LOG_MESSAGE("NUM_PIXEL_SAMPLES=" + std::to_string(Parameters::get()->currentParams()->renderingParams.nPixelSamples)
+        + ", Frame=[" + std::to_string(Parameters::get()->currentParams()->renderingParams.renderSize.x) + "x" + std::to_string(Parameters::get()->currentParams()->renderingParams.renderSize.y) + "]"
+        + ", N_SAMPLES=" + std::to_string(Parameters::get()->currentParams()->renderingParams.nPixelSamples * Parameters::get()->currentParams()->renderingParams.renderSize.x * Parameters::get()->currentParams()->renderingParams.renderSize.y));
 }
 
 // ------------------------------------------------------------------------- //
@@ -170,9 +169,9 @@ void Analyzer::logRenderingInfo() const
 /* // Old code, keep in case I use it again
 std::unique_ptr<MicrofacetDistribution> Analyzer::getTheoricalNDF() const
 {
-    vec2sc alpha = Parameters::userParams.ndfParams.alpha;
-    MicrofacetProfil profil = Parameters::userParams.ndfParams.profil;
-    if (Parameters::userParams.ndfParams.findAlphaFromFileName) {
+    vec2sc alpha = Parameters::get()->currentParams()->ndfParams.alpha;
+    MicrofacetProfil profil = Parameters::get()->currentParams()->ndfParams.profil;
+    if (Parameters::get()->currentParams()->ndfParams.findAlphaFromFileName) {
         std::string fname = mesh->name;
 
         std::vector<std::string> tokens;
@@ -183,8 +182,7 @@ std::unique_ptr<MicrofacetDistribution> Analyzer::getTheoricalNDF() const
         }
 
         if (tokens.size() != 3 && tokens.size() != 5) {
-            Console::err << Console::timePad
-                << "Name of the .obj file does not follow the format such as beckmann-0-50, no analytic NDF could be found. Beckmann with roughness=0.50 is used." << std::endl;
+            Console::print(OutLevel::ERR, Console::timePad + "Name of the .obj file does not follow the format such as beckmann-0-50, no analytic NDF could be found. Beckmann with roughness=0.50 is used.");
             alpha.x = alpha.y = 0.5f;
             profil = MicrofacetProfil::BECKMANN;
         }
@@ -239,7 +237,7 @@ void Analyzer::G1()
     GPU_ENTER
 
     // Create the discrete NDF
-    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
+    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage));
 
     // Init csv writer to store results
     int res = mesh->subdivisions();
@@ -308,17 +306,19 @@ void Analyzer::G1()
     delete writer_rc;
     delete writer_smith;
 
-    // Plot 3D graph
-    PlotsGrapher::splot     (Path::G1_3D_Folder(res) + mesh->name + "_RC.png" ,                pts_rc);
-    PlotsGrapher::cmplot    (Path::G1_3D_Folder(res) + mesh->name + "_RC_colormap.png",        col_rc);
-    PlotsGrapher::splot     (Path::G1_3D_Folder(res) + mesh->name + "_Smith.png",              pts_smith);
-    PlotsGrapher::cmplot    (Path::G1_3D_Folder(res) + mesh->name + "_Smith_colormap.png",     col_smith);
-    PlotsGrapher::splotDiff (Path::G1_3D_Folder(res) + mesh->name + "_ashikhmin_diff",         pts_diff);
-    PlotsGrapher::cmplotDiff(Path::G1_3D_Folder(res) + mesh->name + "_ashikhmin_colormap.png", col_diff, "magma");
+    if (D.nPhi > 1) {
+        // Plot 3D graph
+        PlotsGrapher::splot(Path::G1_3D_Folder(res) + mesh->name + "_RC.png", pts_rc);
+        PlotsGrapher::cmplot(Path::G1_3D_Folder(res) + mesh->name + "_RC_colormap.png", col_rc);
+        PlotsGrapher::splot(Path::G1_3D_Folder(res) + mesh->name + "_Smith.png", pts_smith);
+        PlotsGrapher::cmplot(Path::G1_3D_Folder(res) + mesh->name + "_Smith_colormap.png", col_smith);
+        PlotsGrapher::splotDiff(Path::G1_3D_Folder(res) + mesh->name + "_ashikhmin_diff", pts_diff);
+        PlotsGrapher::cmplotDiff(Path::G1_3D_Folder(res) + mesh->name + "_ashikhmin_colormap.png", col_diff, "magma");
+    }
 
     // Finalize error computation
     SMAPE = normalize_error(SMAPE, D.nPhi * D.nTheta);
-    Console::info << Console::timeStamp << "Error (SMAPE) = " << SMAPE << std::endl;
+    Console::print(OutLevel::INFO, Console::timeStamp.str() + "Error (SMAPE) = " + std::to_string(SMAPE));
 
     EXIT
 }
@@ -333,7 +333,7 @@ void Analyzer::GAF()
     GPU_ENTER
 
     // Create the discrete NDF
-    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
+    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage));
 
     // Mesh resolution
     int res = mesh->subdivisions();
@@ -536,7 +536,7 @@ void Analyzer::tabulate(bool D, bool G1_Ashikhmin, bool G1_RT)
     }
 
     // Create the discrete NDF
-    Discrete* NDF = (D || G1_Ashikhmin) ? new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage) : nullptr;
+    Discrete* NDF = (D || G1_Ashikhmin) ? new Discrete(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage) : nullptr;
 
     // Mesh resolution
     int res = mesh->subdivisions();
@@ -712,7 +712,7 @@ scal Analyzer::error()
     GPU_ENTER
 
     // Create the discrete NDF
-    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
+    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage));
 
     scal SMAPE = 0;
 
@@ -742,26 +742,25 @@ scal Analyzer::error()
 // ------------------------------------------------------------------------- //
 
 
-void Analyzer::statistics(bool computeError)
+void Analyzer::features()
 {
     GPU_ENTER
-    scal E = computeError ? error() : 0.f;
+    scal E = Parameters::get()->currentParams()->methodParams.computeError ? error() : 0.f;
     
-    csv::CSVWriter* writer = new csv::CSVWriter(Path::statisticsFile(mesh->subdivisions()), std::ios_base::app);
+    csv::CSVWriter* writer = new csv::CSVWriter(Path::featuresFile(mesh->subdivisions()), std::ios_base::app);
 
-    Console::out << Console::timeStamp << "Computing statistics..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Computing features...");
     StatisticsTool stats(mesh, E);
 
-    Console::out << std::endl;
-    stats.print();
-    Console::out << std::endl;
+    Console::print(OutLevel::TRACE, "");
+    stats.print(OutLevel::TRACE);
+    Console::print(OutLevel::TRACE, "");
 
-    Console::out << Console::timePad << "Writing statistics..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Writing features...");
     if (writer->numberOfLines() == 0) stats.CSVHeader(writer);
     stats.toCSV(writer);
 
-    Console::succ << Console::timePad
-        << "Statistics append in " << writer->getFilename() << std::endl;
+    Console::print(OutLevel::SUCCESS, Console::timePad + "Features append in " + writer->getFilename());
 
     EXIT
 }
@@ -785,56 +784,48 @@ void Analyzer::fullPipeline()
     }
 
     // Create the discrete NDF
-    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage));
+    std::unique_ptr<Discrete> discrete_ndf(new Discrete(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage));
+
+    // Tabulate the NDF
+    int res = mesh->subdivisions();
+    discrete_ndf->toCSV(Path::tabulationD(mesh->name, res));
     
     // Create CSV writers
-    int res = mesh->subdivisions();
-    csv::CSVWriter* writer_distrib = new csv::CSVWriter(Path::tabulationD(mesh->name, res));
     csv::CSVWriter* writer_smith = new csv::CSVWriter(Path::tabulationG1_smith(mesh->name, res));
     csv::CSVWriter* writer_rc = render ? new csv::CSVWriter(Path::tabulationG1_rc(mesh->name, res)) : new csv::CSVWriter();
     csv::CSVWriter* writer_error = render ? new csv::CSVWriter(Path::tabulationError(mesh->name, res)) : new csv::CSVWriter();
-    csv::CSVWriter* writer_stats = new csv::CSVWriter(Path::statisticsFile(res), std::ios_base::app);
+    csv::CSVWriter* writer_stats = new csv::CSVWriter(Path::featuresFile(res), std::ios_base::app);
 
     // Write first row (theta)
-    writeTheta(*writer_distrib, true);
     writeTheta(*writer_smith, false);
     writeTheta(*writer_rc, false);
     writeTheta(*writer_error, false);
 
-    Console::out << Console::timeStamp << "Analyzer computing G1s..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Analyzer computing G1s...");
 
     // Prepare error
     scal E = 0;
 
-    // Prepare iteration values
-    const scal phiStart = Discrete::phiStart(), phiEnd = Discrete::phiEnd();
-    const scal thetaStart = Discrete::thetaStart(), thetaEnd = Discrete::thetaEnd();
-    const size_t nPhi = Discrete::phiSize(), nTheta = Discrete::thetaSize();
-    const scal phiStep = (phiEnd - phiStart) / (scal)nPhi;
-    const scal thetaStep = (thetaEnd - thetaStart) / (scal)nTheta;
-
     // Start double loop
 
-    for (int i = 0; i < nPhi; ++i) {
-        scal phi = phiStart + i * phiStep; // [ -pi, ..., ..., ... ], pi
+    for (int i = 0; i < D.nPhi; ++i) {
+        scal phi = D.phiStart + i * D.phiRange / D.nPhi; // [ -pi, ..., ..., ... ], pi
 
         // One vector for each row
-        std::vector<csv::elem> vector_d;
         std::vector<csv::elem> vector_g1_ashikhmin;
         std::vector<csv::elem> vector_g1_rt;
         std::vector<csv::elem> vector_error;
 
         // Push back the first value: phi (at the start of the cell)
-        vector_d.push_back({            csv::elem::Tag::SCAL, phi });
         vector_g1_ashikhmin.push_back({ csv::elem::Tag::SCAL, phi });
         vector_g1_rt.push_back({        csv::elem::Tag::SCAL, phi });
         vector_error.push_back({        csv::elem::Tag::SCAL, phi });
         
         // Move phi at the center of the cell
-        phi += 0.5 * phiStep; // [ -pi+d, ...+d, ...+d, ...+d ], pi+d
+        phi += D.phiStart + (i+0.5) * D.phiRange / D.nPhi ; // [ -pi+d, ...+d, ...+d, ...+d ], pi+d
 
-        for (int j = 0; j < nTheta; ++j) {
-            scal theta = thetaStart + j * thetaStep + 0.5 * thetaStep; // [0+d, ...+d, ...+d, ...+d ], pi/2+d
+        for (int j = 0; j < D.nTheta; ++j) {
+            scal theta = D.thetaStart + (j+0.5) * D.thetaRange / D.nTheta; // [0+d, ...+d, ...+d, ...+d ], pi/2+d
 
             vec3sc dir = Conversion::polar_to_cartesian(theta, phi);
 
@@ -845,7 +836,6 @@ void Analyzer::fullPipeline()
             scal e            = render ? abs(G1_RT - G1_Ashikhmin) : 0;
 
             // Add each value to the row vector
-            vector_d.push_back({            csv::elem::Tag::SCAL, D });
             vector_g1_ashikhmin.push_back({ csv::elem::Tag::SCAL, G1_Ashikhmin });
             vector_g1_rt.push_back({        csv::elem::Tag::SCAL, G1_RT });
             vector_error.push_back({        csv::elem::Tag::SCAL, e });
@@ -855,45 +845,44 @@ void Analyzer::fullPipeline()
         }
 
         // Write rows
-        writer_distrib->writeRow(vector_d);
         writer_smith->writeRow(vector_g1_ashikhmin);
         writer_rc->writeRow(vector_g1_rt);
         writer_error->writeRow(vector_error);
 
-        if (Parameters::userParams.outLevel >= OutLevel::INFO) {
-            Console::light << Console::timePad << Console::indent;
-            Console::light << "(" << std::setfill(' ') << std::setw(std::to_string(nPhi).length()) << i << " / " << nPhi << ") ";
+        if (Parameters::get()->currentParams()->outLevel >= OutLevel::INFO) {
+            std::stringstream ss;
+            ss << Console::timePad << Console::indent;
+            ss << "(" << std::setfill(' ') << std::setw(std::to_string(D.nPhi).length()) << i << " / " << D.nPhi << ") ";
             if (render)
-                Console::light << "Current error = " << std::to_string(E);
-            Console::light << "     ###     phi = " << std::to_string(phi) << std::endl;
+                ss << "Current error = " << std::to_string(E);
+            ss << "     ###     phi = " << std::to_string(phi);
+            Console::print(OutLevel::TRACE, ss.str());
         }
     }
+
+    writer_smith->close();
+    writer_rc->close();
+    writer_error->close();
+    delete writer_smith;
+    delete writer_rc;
+    delete writer_error;
 
     // End error statistics
     if (render) {
         E = normalize_error(E, D.nPhi * D.nTheta);
-        Console::prog << Console::timePad << "Error = " << E << std::endl;
+        Console::print(OutLevel::TRACE, Console::timePad + "Error = " + std::to_string(E));
     }
 
-    Console::out << Console::timeStamp << "Computing statistics..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Computing features...");
     StatisticsTool stats(mesh, E);
 
-    Console::out << Console::timePad << "Writing statistics..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Writing features...");
     if (writer_stats->numberOfLines() == 0) stats.CSVHeader(writer_stats);
     stats.toCSV(writer_stats);
 
-    Console::succ << Console::timePad << "Statistics append in " << writer_stats->getFilename() << std::endl;
+    Console::print(OutLevel::TRACE, Console::timePad + "Statistics append in " + writer_stats->getFilename());
 
-    writer_distrib->close();
-    writer_smith->close();
-    writer_rc->close();
-    writer_error->close();
     writer_stats->close();
-
-    delete writer_distrib;
-    delete writer_smith;
-    delete writer_rc;
-    delete writer_error;
     delete writer_stats;
 
     EXIT

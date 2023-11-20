@@ -9,7 +9,11 @@ Things to do/finish:
     <li>Python scripts</li>
     <li>Masking correction</li>
     <li>Readme (installation, dependencies, database, links, etc.)</li>
-    <li>Cleaning code</li>
+    <li>Cleaning code
+        <ul>
+            <li>Check manually closed files<li>
+        </ul>
+    </li>
 </ul>
 </div>
 
@@ -36,6 +40,29 @@ $ SmithMaskingStudy -e
 
 ## Parameters (JSON file)
 
+### Overview
+
+The input JSON file contains all parameters which can be used when running SmithMaskingStudy. Most of them have default values, but some are required.
+
+The JSON file must follow the excerpt given below. `userParams` is an array that can contains several parameters set, which can be useful if you want to run different methods in one input.
+
+```json
+{
+    "userParams":[
+        {
+            "methodParams": {...},
+            "pathParams": {...},
+            "directionParams": {...},
+            "ndfParams": {...},
+            "sideEffectParams": {...},
+            "renderingParams": {...},
+            "outLevel": ...,
+            "log": ...,
+        }
+    ]
+}
+```
+
 ### Method
 
 > Required.
@@ -47,7 +74,7 @@ $ SmithMaskingStudy -e
     "jiggleFlakes": bool
 }
 ```
-- `name` (default `G1`). Must be one of the followings:
+- `name` (**required**). Must be one of the followings:
     - **G1**: measure ground-truth masking $G_1^{rc}$ with ray casting, compute theoretical masking $G_1$. Results are saved as 2D tabulations .csv files and functions are plotted in .png files.
     - **GAF**: same as G1 method, but for full visibility (masking and shadowing). The theoretical is computed with decorrelated $G_1(i)G_1(o)$. 
     - **D_TABULATION**: tabulate the 2D normal distribution function $D$.
@@ -64,13 +91,13 @@ $ SmithMaskingStudy -e
 
 ```json
 "pathParams": {
+    "objDir": string,
+    "hfDir": string,
+    "outputsDir": string,
     "surfNames": array<string>,
     "surfMin": int (in [1, 334]),
     "surfMax": int (in [1, 334]),
     "resolutions": array<int>,
-    "objDir": string,
-    "hfDir": string,
-    "outputsDir": string,
     "gnuplotPath": string,
     "ptxFile": string
 }
@@ -79,9 +106,9 @@ $ SmithMaskingStudy -e
 - `objDir` (**required**). Root directory where mesh .obj files are stored.
 - `hfDir` (**required** if `methodParams.name` is `"GENERATE_MICROFLAKES"`). Root directory where heightfields .png files are stored.
 - `outputsDir` (**required**). Root directory for all generated output files.
-- `surfNames` (default `[]`). List of surfaces names, no extension (might include subpath).
-- `surfMin` (default `null`). For PerTex database, gives the minimum index to start iteration. `surfMax` must also be set (`surfMin` $\leq$ `surfMax`).
-- `surfMax` (default `null`). For PerTex database, gives the maximum index to start iteration. `surfMin` must also be set (`surfMin` $\leq$ `surfMax`).
+- `surfNames` (**required** if `surfMin` or `surfMax` are null). List of surfaces names, no extension (might include subpath).
+- `surfMin` (**required** if surfNames is null). For PerTex database, gives the minimum index to start iteration. `surfMax` must also be set (`surfMin` $\leq$ `surfMax`).
+- `surfMax` (**required** if surfNames is null). For PerTex database, gives the maximum index to start iteration. `surfMin` must also be set (`surfMin` $\leq$ `surfMax`).
 - `resolutions` (default `[8]`). List of meshes resolutions (number of subdivisions), with obj files stored in directory `<objFolder>/<resolution>_subdivisions/`.
 - `gnuplotPath` (default `"gnuplot"`). path/to/gnuplot.exe, needed to save graphs.
 - `ptxFile` (default `"./sources/cuda/devicePrograms.cu.ptx"`). Path to the ptxFile generated from the cuda file. Needed to measure masking with ray tracing.
@@ -114,23 +141,37 @@ The input folder must respect the following tree structure:
 
 ```json
 "directionParams": {
-    "phiStart": float in [0, 2*pi],
-    "phiEnd": float in [0, 2*pi],
-    "nAzimuthSamples": int > 0,
+    "phiStart": float in [-pi, +pi],
+    "phiEnd": float in [-pi, +pi],
+    "nPhiSamples": int > 0,
     "thetaStart": float in [-pi/2, pi/2],
     "thetaEnd": float in [-pi/2, pi/2],
-    "nElevationSamples": int > 0
+    "nThetaSamples": int > 0
 }
 ```
 
-- `phiStart` (default `0`): minimal $\phi_o$
-- `phiEnd` (default `0`): maximal $\phi_o$
+- `phiStart` (default `-pi`): minimal $\phi_o$
+- `phiEnd` (default `+pi`): maximal $\phi_o$
 - `nPhiSamples` (default `1`): number of $\phi_o$ sampled
 - `thetaStart` (default `0`): minimal $\theta_o$
-- `thetaEnd` (default `0`): maximal $\theta_o$
-- `nThetaSamples` (default `100`): number of $\theta_o$ sampled
+- `thetaEnd` (default `pi/2`): maximal $\theta_o$
+- `nThetaSamples` (default `90`): number of $\theta_o$ sampled
 
 `"directionParams"` can also be `"directionInParams"` or `"directionOutParams"` to specify direction parameters for $i$ (In) and $o$ (Out), useful for GAF computation.
+
+### NDF
+
+> Optional.
+
+```json
+"ndfParams": {
+    "nTheta": int,
+    "nPhi": int
+}
+```
+
+- `nPhi` (default `400`): number of $\phi_m$ values for $D$ tabulation
+- `nTheta` (default `100`): number of $\theta_m$ values for $D$ tabulation
 
 ### Side effects
 

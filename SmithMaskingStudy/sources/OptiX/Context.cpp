@@ -1,26 +1,24 @@
 #include "OptiX/Context.h"
 #include "utils/console.h"
+#include "utils/params.h"
 
 OptixDeviceContext Context::optixContext = nullptr;
 
 void Context::context_log_cb(unsigned int level, const char* tag, const char* message, void* /*cbdata */)  // static 
 {
-    // callback levels:
-    // 0: disable
-    // 1: fatal
-    // 2: error
-    // 3: warning
-    // 4: print
+    // callback levels: OutLevel
+    // 0: NO_OUTPUT
+    // 1: ERR
+    // 2: WARNING
+    // 3: INFO
+    // 4: SUCCESS
+    // 5: NORMAL
+    // 6: TRACE
 
-    Console::OutStream out = Console::optixOut << Console::timePad;
-    if (level <= 2) {
-        out = Console::optixErr;
-    }
-    else if (level <= 3) {
-        out = Console::optixWarn;
-    }
-    out << "[" << std::setw(2) << level << "][" << std::setw(12) << tag << "]: "
-            << message << "\n";
+    std::stringstream ss;
+    ss << Console::timePad;
+    ss << "[" << std::setw(2) << level << "][" << std::setw(12) << tag << "]: " << message;
+    Console::printOptix(OutLevel(level), ss.str());
 }
 
 
@@ -29,7 +27,8 @@ Context::Context()
 {
     if (!optixContext)
     {
-        Console::out << Console::timeStamp << "Creating OptiX context..." << std::endl;
+
+        Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Creating OptiX context...");
 
         // -------------------------------------------------------
         // init optix
@@ -41,7 +40,7 @@ Context::Context()
         if (numDevices == 0)
             throw std::runtime_error("Optix: no CUDA capable devices found!");
         OPTIX_CHECK(optixInit());
-        Console::succ << Console::timePad << "Optix successgully initialized." << std::endl;
+        Console::print(OutLevel::SUCCESS, Console::timePad + "Optix successgully initialized.");
 
 
         // -------------------------------------------------------
@@ -55,17 +54,20 @@ Context::Context()
         // check which device we are working on
         cudaDeviceProp deviceProps;
         cudaGetDeviceProperties(&deviceProps, deviceID);
-        Console::light << Console::timePad << "Optix running on device: " << deviceProps.name << std::endl;
+        Console::print(OutLevel::NORMAL, Console::timePad + "Optix running on device: " + deviceProps.name);
 
         // Get the current cuda context
         CUresult cuRes = cuCtxGetCurrent(&cudaContext);
-        if (cuRes != CUDA_SUCCESS)
-            Console::err << "Error querying current context: error code " << cuRes << std::endl;
+        if (cuRes != CUDA_SUCCESS) {
+            std::stringstream ss_cuRes;
+            ss_cuRes << cuRes;
+            Console::print(OutLevel::ERR, "Error querying current context: error code " + ss_cuRes.str());
+        }
 
         // Set the callback
         OptixDeviceContextOptions options = {};
         options.logCallbackFunction = &Context::context_log_cb;
-        options.logCallbackLevel = 3;
+        options.logCallbackLevel = (int) OutLevel::NORMAL;
 
         // Create the context
         OPTIX_CHECK(optixDeviceContextCreate(cudaContext, &options, &optixContext));

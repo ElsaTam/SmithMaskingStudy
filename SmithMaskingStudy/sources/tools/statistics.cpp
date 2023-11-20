@@ -56,8 +56,8 @@ StatisticsTool::~StatisticsTool() { }
 
 bool closeToEdge(const TriangleMesh* mesh, const gdt::vec3sc& point)
 {
-    return (mesh->bounds.closest_distance(point).x < Parameters::userParams.sideEffectParams.borderPercentage * mesh->bounds.span().x / 2.f
-        || mesh->bounds.closest_distance(point).y < Parameters::userParams.sideEffectParams.borderPercentage * mesh->bounds.span().y / 2.f);
+    return (mesh->bounds.closest_distance(point).x < Parameters::get()->currentParams()->sideEffectParams.borderPercentage * mesh->bounds.span().x / 2.f
+        || mesh->bounds.closest_distance(point).y < Parameters::get()->currentParams()->sideEffectParams.borderPercentage * mesh->bounds.span().y / 2.f);
 }
 
 #define STATS_PHI
@@ -68,7 +68,7 @@ bool closeToEdge(const TriangleMesh* mesh, const gdt::vec3sc& point)
 
 scal StatisticsTool::computeAnisotropy() const
 {
-    Discrete D(*mesh, nullptr, Parameters::userParams.sideEffectParams.borderPercentage);
+    Discrete D(*mesh, nullptr, Parameters::get()->currentParams()->sideEffectParams.borderPercentage);
     const scal phiStart = D.phiStart();
     const scal phiEnd = D.phiEnd();
     const scal phiSize = D.phiSize();
@@ -114,7 +114,7 @@ void StatisticsTool::compute5Statistics()
     std::set<int>& low_cluster = sets[min_idx];                     //
 
     // macrosurface area
-    const scal border = 1. - Parameters::userParams.sideEffectParams.borderPercentage;
+    const scal border = 1. - Parameters::get()->currentParams()->sideEffectParams.borderPercentage;
     const ld A = static_cast<ld>(mesh->bounds.span().x * border * mesh->bounds.span().y * border);
 
     // statistics for faces
@@ -184,7 +184,6 @@ void StatisticsTool::compute5Statistics()
     const time_point time_end = std::chrono::high_resolution_clock::now();
     const Duration time_duration = Duration(time_start, time_end);
     LOG_MESSAGE("5 features computed in " + time_duration.str());
-    Console::out << "5 features computed in " << time_duration.str() << std::endl;
 }
 
 void StatisticsTool::compute25Statistics()
@@ -213,7 +212,7 @@ void StatisticsTool::compute25Statistics()
     accumulator_set<ld, stats<tag::covariance<ld, tag::covariate1> > > accCovTH;
 
     // macrosurface area
-    const scal border = 1. - Parameters::userParams.sideEffectParams.borderPercentage;
+    const scal border = 1. - Parameters::get()->currentParams()->sideEffectParams.borderPercentage;
     const ld A = static_cast<ld>(mesh->bounds.span().x * border * mesh->bounds.span().y * border);
 
     // statistics for faces
@@ -336,7 +335,6 @@ void StatisticsTool::compute25Statistics()
     const time_point time_end = std::chrono::high_resolution_clock::now();
     const Duration time_duration = Duration(time_start, time_end);
     LOG_MESSAGE("25 features computed in " + time_duration.str());
-    Console::out << "25 features computed in " << time_duration.str() << std::endl;
 }
 
 
@@ -370,7 +368,7 @@ void StatisticsTool::computeStatistics()
 #endif // STATS_CORR
 
     // macrosurface area
-    const scal border = 1. - Parameters::userParams.sideEffectParams.borderPercentage;
+    const scal border = 1. - Parameters::get()->currentParams()->sideEffectParams.borderPercentage;
     const ld A = static_cast<ld>(mesh->bounds.span().x * border * mesh->bounds.span().y * border);
 
     // statistics for faces
@@ -659,8 +657,9 @@ void StatisticsTool::toCSV(csv::CSVWriter* writer) {
 }
 
 
-void StatisticsTool::print() {
-    Console::out << *this << std::endl;
+void StatisticsTool::print(OutLevel level) {
+    std::stringstream ss; ss << *this;
+    Console::print(level, ss.str());
 }
 
 

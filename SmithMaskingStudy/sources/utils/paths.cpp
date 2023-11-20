@@ -7,20 +7,20 @@ namespace Path {
 	// Paths to folders
 
 	const std::vector<int>& resolutions() {
-		return Parameters::userParams.pathParams.resolutions;
+		return Parameters::get()->currentParams()->pathParams.resolutions;
 	}
 
 
 	const std::string& objFolder() {
-		return Parameters::userParams.pathParams.objFolder;
+		return Parameters::get()->currentParams()->pathParams.objDir;
 	}
 
 	const std::string& hfFolder() {
-		return Parameters::userParams.pathParams.hfFolder;
+		return Parameters::get()->currentParams()->pathParams.hfDir;
 	}
 
 	const std::string& outputRootFolder() {
-		return Parameters::userParams.pathParams.outputsFolder;
+		return Parameters::get()->currentParams()->pathParams.outputsDir;
 	}
 
 	std::string subdivisionFolderName(int res) {
@@ -84,17 +84,17 @@ namespace Path {
 	std::string ambientOcclusion_Folder(int res) {
 		return subdivisionFolderPath(ambientOcclusion_Folder(), res);
 	}
-	std::string statistics_Folder() {
-		return outputRootFolder() + "statistics/";
+	std::string features_Folder() {
+		return outputRootFolder() + "features/";
 	}
-	std::string statistics_Folder(int res) {
-		return subdivisionFolderPath(statistics_Folder(), res);
+	std::string features_Folder(int res) {
+		return subdivisionFolderPath(features_Folder(), res);
 	}
 
 	// Paths to files
 
 	const std::vector<std::string>& surfaceNames() {
-		return Parameters::userParams.pathParams.surfNames;
+		return Parameters::get()->currentParams()->pathParams.surfNames;
 	}
 
 	std::string objFile(const std::string& surfName, int res) {
@@ -138,15 +138,15 @@ namespace Path {
 	std::string tabulationError(const std::string& surfName, int res) {
 		return tabulations_Folder(res) + surfName + "_E.csv";
 	}
-	std::string statisticsFile(int res) {
-		return statistics_Folder(res) + "features.csv";
+	std::string featuresFile(int res) {
+		return features_Folder(res) + "features.csv";
 	}
 
 	const std::string& ptxFile() {
-		return Parameters::userParams.pathParams.ptxFile;
+		return Parameters::get()->currentParams()->pathParams.ptxFile;
 	}
 	const std::string& gnuplotExe() {
-		return Parameters::userParams.pathParams.gnuplotPath;
+		return Parameters::get()->currentParams()->pathParams.gnuplotPath;
 	}
 
 	// Utils
@@ -197,6 +197,7 @@ namespace Path {
 		}
 	}
 	bool checkPaths(bool print) {
+		print = print && Parameters::get()->currentParams()->outLevel > OutLevel::NO_OUTPUT;
 		bool allPathCorrects = true;
 		if (print) Console::out << "----- Root folders -----" << std::endl;
 		allPathCorrects = checkFolder(logs_Folder(), print)             && allPathCorrects;
@@ -209,7 +210,7 @@ namespace Path {
 		allPathCorrects = checkFolder(GAF_3D_Folder(), print)           && allPathCorrects;
 		allPathCorrects = checkFolder(tabulations_Folder(), print)      && allPathCorrects;
 		allPathCorrects = checkFolder(ambientOcclusion_Folder(), print) && allPathCorrects;
-		allPathCorrects = checkFolder(statistics_Folder(), print)       && allPathCorrects;
+		allPathCorrects = checkFolder(features_Folder(), print)       && allPathCorrects;
 
 		if (print) Console::out << "----- Resolution folders -----" << std::endl;
 		for (int res : resolutions()) {
@@ -219,12 +220,12 @@ namespace Path {
 			allPathCorrects = checkFolder(GAF_3D_Folder(res), print)           && allPathCorrects;
 			allPathCorrects = checkFolder(tabulations_Folder(res), print)      && allPathCorrects;
 			allPathCorrects = checkFolder(ambientOcclusion_Folder(res), print) && allPathCorrects;
-			allPathCorrects = checkFolder(statistics_Folder(res), print)       && allPathCorrects;
+			allPathCorrects = checkFolder(features_Folder(res), print)       && allPathCorrects;
 		}
 
 		if (print) Console::out << "----- Param files -----" << std::endl;
-		allPathCorrects = checkFile(ptxFile(), print)    && allPathCorrects;
-		allPathCorrects = checkFile(gnuplotExe(), print) && allPathCorrects;
+		allPathCorrects = checkFile(ptxFile(), print) && allPathCorrects;
+		//allPathCorrects = checkFile(gnuplotExe(), print) && allPathCorrects;
 
 		return allPathCorrects;
 	}

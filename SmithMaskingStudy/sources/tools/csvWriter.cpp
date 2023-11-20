@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <sstream>
 #include "utils/console.h"
+#include "utils/params.h"
 
 std::string csv::elem::toString()
 {
@@ -90,7 +91,7 @@ void csv::CSVWriter::close()
 	if (!file.is_open()) return;
 	file.close();
 
-	Console::succ << Console::timePad << "CSV saved to " << filename << " ... done." << std::endl;
+	Console::print(OutLevel::SUCCESS, "CSV saved to " + filename + " ... done.");
 }
 
 int csv::CSVWriter::numberOfLines() const

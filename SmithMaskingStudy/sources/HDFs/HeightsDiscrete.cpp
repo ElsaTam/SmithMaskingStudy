@@ -83,8 +83,8 @@ Histogram::Histogram(const vec3sc& w, const TriangleMesh& mesh, scal borderPerce
             vec3sc v(t1 * v1 + t2 * v2 + (1.f - t1 - t2) * v3);
 
             /* Check if not too close from the border */
-            if (mesh.bounds.closest_distance(v).x < Parameters::userParams.sideEffectParams.borderPercentage * mesh.bounds.span().x / 2.f
-                || mesh.bounds.closest_distance(v).y < Parameters::userParams.sideEffectParams.borderPercentage * mesh.bounds.span().y / 2.f)
+            if (mesh.bounds.closest_distance(v).x < Parameters::get()->currentParams()->sideEffectParams.borderPercentage * mesh.bounds.span().x / 2.f
+                || mesh.bounds.closest_distance(v).y < Parameters::get()->currentParams()->sideEffectParams.borderPercentage * mesh.bounds.span().y / 2.f)
             {
                 continue;
             }
@@ -164,11 +164,11 @@ std::ostream& operator<<(std::ostream& output, const Histogram& hist) {
 
 float HeightsDiscrete::getTheta(size_t i) const {
     if (i < 0) {
-        Console::err << "Error: trying to access theta at index " << i << " (over " << thetas.size() << ")" << std::endl;
+        Console::print(OutLevel::ERR, "Error: trying to access theta at index " + std::to_string(i) + " (over " + std::to_string(thetas.size()) + ")");
         return thetas[0]; // error
     }
     if (i >= thetas.size()) {
-        Console::err << "Error: trying to access theta at index " << i << " (over " << thetas.size() << ")" << std::endl;
+        Console::print(OutLevel::ERR, "Error: trying to access theta at index " + std::to_string(i) + " (over " + std::to_string(thetas.size()) + ")");
         return thetas[thetas.size() - 1]; // error
     }
     return thetas[i];
@@ -197,7 +197,7 @@ float HeightsDiscrete::getCenterTheta(size_t i) const {
 
 float HeightsDiscrete::getCenterPhi(size_t i) const {
     if (i >= phis.size()) {
-        Console::err << "Error: trying to access phi at index " << i << " (over " << phis.size() << ")" << std::endl;
+        Console::print(OutLevel::ERR, "Error: trying to access phi at index " + std::to_string(i) + " (over " + std::to_string(phis.size()) + ")");
         return 0;
     }
     return 0.5f * (getNextPhi(i) + getPhi(i));
@@ -234,7 +234,7 @@ scal HeightsDiscrete::findValue(const std::vector<std::vector<float>>& V, const 
 
 HeightsDiscrete::HeightsDiscrete(const TriangleMesh& mesh, scal borderPercentage)
 {
-    Console::out << Console::timeStamp << "Building Discrete HDF from mesh..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Building Discrete HDF from mesh...");
 
     scal phiStep = (phiEnd() - phiStart()) / (scal)phiSize();
     scal thetaStep = (thetaEnd() - thetaStart()) / (scal)thetaSize();
@@ -250,14 +250,15 @@ HeightsDiscrete::HeightsDiscrete(const TriangleMesh& mesh, scal borderPercentage
 
     H_values.resize(phiSize());
     for (int p = 0; p < phiSize(); ++p) {
-        Console::out << Console::timePad << p+1 << "/" << phiSize() << std::endl;
         for (int t = 0; t < thetaSize(); ++t) {
             const vec3sc dir = Conversion::polar_to_cartesian(getTheta(t), getPhi(p));
             H_values[p].push_back(Histogram(dir, mesh, borderPercentage));
         }
     }
 
-    Console::out << *this << std::endl;
+    std::stringstream ss;
+    ss << *this;
+    Console::print(OutLevel::TRACE, ss.str());
 }
 
 

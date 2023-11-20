@@ -38,8 +38,8 @@ namespace Path {
 	std::string tabulations_Folder(int res);
 	std::string ambientOcclusion_Folder();
 	std::string ambientOcclusion_Folder(int res);
-	std::string statistics_Folder();
-	std::string statistics_Folder(int res);
+	std::string features_Folder();
+	std::string features_Folder(int res);
 
 	const std::string& ptxFile();
 	const std::string& gnuplotExe();
@@ -53,7 +53,7 @@ namespace Path {
 	std::string tabulationG1_smith(const std::string& surfName, int res = 0);
 	std::string tabulationGAF_rc(const std::string& surfName, scal phiIn, scal thetaIn, int res = 0);
 	std::string tabulationError(const std::string& surfName, int res = 0);
-	std::string statisticsFile(int res = 0);
+	std::string featuresFile(int res = 0);
 
 
 	// Utils

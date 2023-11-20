@@ -17,25 +17,24 @@ OptixRenderer::OptixRenderer(const TriangleMesh* _mesh) :
     as(nullptr),
     mesh(nullptr)
 {
-    Console::out << Console::timeStamp
-                 << "Building OptixRenderer..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Building OptixRenderer...");
 
 	const char* ptx_path = Path::ptxFile().c_str();
 
 	// Initialize optix and create the context (static)
 	context = Context();
-    Console::light << Console::timePad << "Context created" << std::endl;
+    Console::print(OutLevel::TRACE, Console::timePad + "Context created");
 
 	// CUDA stream that optix pipeline will run on
 	CUDA_CHECK(StreamCreate(&stream));
 
 	// Build the pipeline (create the module and program groups)
 	pipeline = new Pipeline(ptx_path);
-    Console::light << Console::timePad << "Pipeline created" << std::endl;
+    Console::print(OutLevel::TRACE, Console::timePad + "Pipeline created");
 
 	// Build the SBT (raygen and miss records)
 	sbt = new SBT(pipeline);
-    Console::light << Console::timePad << "SBT created" << std::endl;
+    Console::print(OutLevel::TRACE, Console::timePad + "SBT created");
 
     if (_mesh)
         setGeo(_mesh);
@@ -50,8 +49,7 @@ OptixRenderer::~OptixRenderer()
 
 void OptixRenderer::setGeo(const TriangleMesh* _mesh)
 {
-    Console::out << Console::timeStamp
-        << "Setting the geometry in the renderer..." << std::endl;
+    Console::print(OutLevel::TRACE, Console::timeStamp.str() + "Setting the geometry in the renderer...");
 
     mesh = _mesh;
 
@@ -59,18 +57,18 @@ void OptixRenderer::setGeo(const TriangleMesh* _mesh)
 
 	// Build the acceleration structure (Bottom-Level Acceleration Structure)
 	as = new AccelerationStructure(mesh);
-    Console::light << Console::timePad << "Acceleration Structure created" << std::endl;
+    Console::print(OutLevel::TRACE, Console::timePad + "Acceleration Structure created");
 
 	// Update the SBT (hitgroup records)
 	sbt->updateAS(*as);
-    Console::light << Console::timePad << "SBT updated with AS" << std::endl;
+    Console::print(OutLevel::TRACE, Console::timePad + "SBT updated with AS");
 
 	// Initialize the launch parameters
 	launchParams.traversable = as->getHandle();
 	launchParamsBuffer.alloc(sizeof(launchParams));
 
     if (checkReady()) {
-        Console::succ << Console::timePad << "SUCCESS: [OptixRenderer] Fully built and ready to render!" << std::endl;
+        Console::print(OutLevel::SUCCESS, "[OptixRenderer] Fully built and ready to render!");
     }
 }
 
@@ -92,10 +90,10 @@ void OptixRenderer::resize(const vec2i& newSize)
 void OptixRenderer::setUserParams()
 {
     // Visibility
-    launchParams.visibility.useSmooth = Parameters::userParams.renderingParams.useSmooth;
+    launchParams.visibility.useSmooth = Parameters::get()->currentParams()->renderingParams.useSmooth;
 
     // Program type
-    switch (Parameters::userParams.method) {
+    switch (Parameters::get()->currentParams()->methodParams.method) {
     case Method::G1:
     case Method::GENERATE_MICROFLAKES:
     case Method::FEATURES:
@@ -116,8 +114,7 @@ void OptixRenderer::setUserParams()
 void OptixRenderer::setCamera()
 {
     if (!mesh) {
-        Console::warn << "Setting the camera, but mesh is null. "
-            << "Camera won't be centered." << std::endl;
+        Console::print(OutLevel::WARNING, Console::timePad + "Setting the camera, but mesh is null. Camera won't be centered.");
         return;
     }
     vec3sc from = vec3sc( mesh->bounds.center().x, mesh->bounds.center().y, mesh->bounds.upper.z + 5. );
@@ -125,7 +122,7 @@ void OptixRenderer::setCamera()
     vec3sc up{ 0., 1., 0. };
     scal cosFovy = max(mesh->bounds.span().x, mesh->bounds.span().y);
 
-    launchParams.camera.nPixelSamples = Parameters::userParams.renderingParams.nPixelSamples;
+    launchParams.camera.nPixelSamples = Parameters::get()->currentParams()->renderingParams.nPixelSamples;
     launchParams.camera.position = from;
     launchParams.camera.direction = normalize(at - from);
     launchParams.camera.cosFovy = cosFovy;
@@ -159,7 +156,7 @@ void OptixRenderer::render(const std::string& fileName)
     CUDA_SYNC_CHECK();
 
     // create PNG
-    if (Parameters::userParams.renderingParams.createPicture)
+    if (Parameters::get()->currentParams()->renderingParams.createPicture)
     {
         std::vector<uint32_t> pixels;
         const size_t npixels = launchParams.frame.size.x * launchParams.frame.size.y;
@@ -167,9 +164,7 @@ void OptixRenderer::render(const std::string& fileName)
         colorBuffer.download(pixels.data(), npixels);
 
         stbi_write_png(fileName.c_str(), launchParams.frame.size.x, launchParams.frame.size.y, 4, pixels.data(), launchParams.frame.size.x * sizeof(uint32_t));
-        Console::succ << std::endl
-            << "Image rendered, and saved to " << fileName << " ... done."
-            << std::endl << std::endl;
+        Console::print(OutLevel::SUCCESS, Console::timePad + "Image rendered, and saved to " + fileName);
     }
 }
 
@@ -183,7 +178,7 @@ void OptixRenderer::render(scal phi, scal theta)
     dir = Geometry::rotateAlongNormal(dir, mesh->meso_normal);
     launchParams.visibility.directionOut = dir;
 
-    std::string fileName = Parameters::userParams.renderingParams.createPicture ? Path::renderImg(mesh->name, launchParams, phi, theta) : "";
+    std::string fileName = Parameters::get()->currentParams()->renderingParams.createPicture ? Path::renderImg(mesh->name, launchParams, phi, theta) : "";
     render(fileName);
 }
 
@@ -281,10 +276,6 @@ void OptixRenderer::setLaunchParams(std::map<std::string, optionalParam> params)
         else if (it->first == "programType") {
             launchParams.camera.programType = std::get<ProgramType>(it->second);
         }
-        else if (it->first == "nPixelSamples") {
-            launchParams.camera.nPixelSamples = std::get<int>(it->second);
-            Parameters::userParams.renderingParams.nPixelSamples = std::get<int>(it->second);
-        }
     }
 }
 
@@ -294,23 +285,23 @@ bool OptixRenderer::checkReady() const
 {
     bool ready = true;
     if (!as) {
-        Console::err << "ERROR: [OptixRenderer] Acceleration Structure is not built." << std::endl;
+        Console::print(OutLevel::ERR, "[OptixRenderer] Acceleration Structure is not built.");
         ready = false;
     }
     if (!mesh) {
-        Console::err << "ERROR: [OptixRenderer] No mesh given." << std::endl;
+        Console::print(OutLevel::ERR, "[OptixRenderer] No mesh given.");
         ready = false;
     }
     if (!sbt) {
-        Console::err << "ERROR: [OptixRenderer] SBT is not built." << std::endl;
+        Console::print(OutLevel::ERR, "[OptixRenderer] SBT is not built.");
         ready = false;
     }
     if (!pipeline) {
-        Console::err << "ERROR: [OptixRenderer] Pipeline is not built." << std::endl;
+        Console::print(OutLevel::ERR, "[OptixRenderer] Pipeline is not built.");
         ready = false;
     }
     if (!Context::optixContext) {
-        Console::err << "ERROR: [OptixRenderer] Context is not built." << std::endl;
+        Console::print(OutLevel::ERR, "[OptixRenderer] Context is not built.");
         ready = false;
     }
 

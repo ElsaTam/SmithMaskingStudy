@@ -1,6 +1,7 @@
 #include "OptiX/AS.h"
 #include "OptiX/Context.h"
 #include "utils/console.h"
+#include "utils/params.h"
 
 AccelerationStructure::AccelerationStructure(const TriangleMesh* mesh)
 {
@@ -19,10 +20,12 @@ AccelerationStructure::AccelerationStructure(const TriangleMesh* mesh)
     indexBuffer.alloc_and_upload(_mesh.index);
     bounds = _mesh.bounds;
 
-    Console::out << Console::timeStamp
-        << "-- vertexBuffer size: " << (vertexBuffer.sizeInBytes / 1024 / 1024) << " MB (" << vertexBuffer.sizeInBytes << " bytes)"<< std::endl;
-    Console::out << Console::timeStamp
-        << "-- indexBuffer size: " << (indexBuffer.sizeInBytes / 1024 / 1024) << " MB (" << indexBuffer.sizeInBytes << " bytes)" << std::endl;
+    Console::print(OutLevel::NORMAL, Console::timeStamp.str()
+        + "-- vertexBuffer size: " + std::to_string(vertexBuffer.sizeInBytes / 1024 / 1024)
+        + " MB (" + std::to_string(vertexBuffer.sizeInBytes) + " bytes)");
+    Console::print(OutLevel::NORMAL, Console::timeStamp.str()
+        + "-- indexBuffer size: " + std::to_string(indexBuffer.sizeInBytes / 1024 / 1024)
+        + " MB (" + std::to_string(indexBuffer.sizeInBytes) + " bytes)");
 
     triangleInput = {};
     triangleInput.type
@@ -77,8 +80,9 @@ AccelerationStructure::AccelerationStructure(const TriangleMesh* mesh)
 
     CUDABuffer compactedSizeBuffer;
     compactedSizeBuffer.alloc(sizeof(uint64_t));
-    Console::out << Console::timeStamp
-        << "-- compactedSizeBuffer size: " << (compactedSizeBuffer.sizeInBytes / 1024 / 1024) << " MB (" << compactedSizeBuffer.sizeInBytes << " bytes)" << std::endl;
+    Console::print(OutLevel::NORMAL, Console::timeStamp.str()
+        + "-- compactedSizeBuffer size: " + std::to_string(compactedSizeBuffer.sizeInBytes / 1024 / 1024) 
+        + " MB (" + std::to_string(compactedSizeBuffer.sizeInBytes) + " bytes)");
 
     OptixAccelEmitDesc emitDesc;
     emitDesc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
@@ -90,12 +94,14 @@ AccelerationStructure::AccelerationStructure(const TriangleMesh* mesh)
 
     CUDABuffer tempBuffer;
     tempBuffer.alloc(blasBufferSizes.tempSizeInBytes);
-    Console::out << Console::timeStamp
-        << "-- tempBuffer size: " << (tempBuffer.sizeInBytes / 1024 / 1024) << " MB (" << tempBuffer.sizeInBytes << " bytes)" << std::endl;
+    Console::print(OutLevel::NORMAL, Console::timeStamp.str()
+        + "-- tempBuffer size: " + std::to_string(tempBuffer.sizeInBytes / 1024 / 1024)
+        + " MB (" + std::to_string(tempBuffer.sizeInBytes) + " bytes)");
 
     CUDABuffer outputBuffer;
-    Console::out << Console::timeStamp
-        << "-- outputBuffer size: " << (blasBufferSizes.outputSizeInBytes / 1024 / 1024) << " MB (" << blasBufferSizes.outputSizeInBytes << " bytes)" << std::endl;
+    Console::print(OutLevel::NORMAL, Console::timeStamp.str()
+        + "-- outputBuffer size: " + std::to_string(blasBufferSizes.outputSizeInBytes / 1024 / 1024)
+        + " MB (" + std::to_string(blasBufferSizes.outputSizeInBytes) + " bytes)");
     outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
 
     OPTIX_CHECK(optixAccelBuild(Context::optixContext,

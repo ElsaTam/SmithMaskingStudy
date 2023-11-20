@@ -46,7 +46,7 @@ struct TriangleMesh {
     gdt::vec3sc computeMesoNormal(int maxSamples) const;
 
 
-    void flatSetContainingFace(int faceID, gdt::vec3sc N, std::queue<int>& faceIDQueue, bool write) const;
+    void flatSetContainingFace(int faceID, gdt::vec3sc N, std::queue<int>& faceIDQueue) const;
     std::vector<std::vector<int>> flatSets(gdt::vec3sc N) const;
 
     std::vector<std::set<int>> heightSeparation(int K, std::vector<scal>& centroids) const;

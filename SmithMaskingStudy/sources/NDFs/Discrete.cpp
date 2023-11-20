@@ -31,11 +31,11 @@
 
 float Discrete::getTheta(size_t i) const {
     if (i < 0) {
-        Console::err << "Error: trying to access theta at index " << i << " (over " << thetas.size() << ")" << std::endl;
+        Console::print(OutLevel::ERR, "Error: trying to access theta at index " + std::to_string(i) + " (over " + std::to_string(thetas.size()) + ")");
         return thetas[0]; // error
     }
     if (i >= thetas.size()) {
-        Console::err << "Error: trying to access theta at index " << i << " (over " << thetas.size() << ")" << std::endl;
+        Console::print(OutLevel::ERR, "Error: trying to access theta at index " + std::to_string(i) + " (over " + std::to_string(thetas.size()) + ")");
         return thetas[thetas.size() - 1]; // error
     }
     return thetas[i];
@@ -64,7 +64,7 @@ float Discrete::getCenterTheta(size_t i) const {
 
 float Discrete::getCenterPhi(size_t i) const {
     if (i >= phis.size()) {
-        Console::err << "Error: trying to access phi at index " << i << " (over " << phis.size() << ")" << std::endl;
+        Console::print(OutLevel::ERR, "Error: trying to access phi at index " + std::to_string(i) + " (over " + std::to_string(phis.size()) + ")");
         return 0;
     }
     return 0.5f * (getNextPhi(i) + getPhi(i));
@@ -171,9 +171,9 @@ void Discrete::addNormal(const vec3sc& n, const scal weight)
     findIndex(n, thetaIdx, phiIdx);
     // Add the normal to the distribution histogram
     //if (thetaIdx >= thetaSize()) {
-    //    Console::err << n << std::endl;
-    //    Console::err << "Phi index : " << phiIdx << std::endl;
-    //    Console::err << "Theta index : " << thetaIdx << std::endl;
+    //    Console::print(OutLevel::ERR, std::to_string(n));
+    //    Console::print(OutLevel::ERR, "Phi index : " + std::to_string(phiIdx));
+    //    Console::print(OutLevel::ERR, "Theta index : " std::to_string(thetaIdx));
     //}
     D_values[phiIdx][thetaIdx] += weight;
 }
@@ -181,7 +181,7 @@ void Discrete::addNormal(const vec3sc& n, const scal weight)
 Discrete::Discrete(const TriangleMesh& mesh, const MicrofacetDistribution* _matchingNDF, scal borderPercentage)
     : matchingNDF(_matchingNDF)
 {
-    Console::out << Console::timeStamp << "Building Discrete NDF from mesh..." << std::endl;
+    Console::print(OutLevel::TRACE, "Building Discrete NDF from mesh...");
     m_type = NDFTypes::DISCRETE;
     m_meso_normal = mesh.meso_normal;
 
@@ -290,7 +290,6 @@ Discrete::Discrete(const TriangleMesh& mesh, const MicrofacetDistribution* _matc
         }
         m_average_normal /= mesh.surfaceArea;
         m_average_normal = normalize(m_average_normal);
-        Console::light << Console::timePad << "Average micronormals = " << m_average_normal << std::endl;
     }
 
     // -------- Step 4 :
@@ -314,7 +313,7 @@ Discrete::Discrete(const TriangleMesh& mesh, const MicrofacetDistribution* _matc
         m_D_integral *= dTheta * dPhi;
 
         cdf_sum = std::get<2>(cdf[cdf.size() - 1]);
-        Console::light << Console::timePad << "Cdf sum = " << cdf_sum << std::endl;
+        Console::print(OutLevel::TRACE, Console::timePad + "Cdf sum = " + std::to_string(cdf_sum));
         if (cdf_sum != 1) {
             for (size_t i = 1; i < cdf.size(); ++i)
                 std::get<2>(cdf[i]) /= cdf_sum;
@@ -322,20 +321,15 @@ Discrete::Discrete(const TriangleMesh& mesh, const MicrofacetDistribution* _matc
         }
     }
 
-    Console::out << *this << std::endl;
-
-    /*for (int p = 0; p < phiSize(); ++p) {
-       Console::out << Console::timePad
-            << "phi("       << p << ") = " << getPhi(p) << " / "
-            << "nextPhi("   << p << ") = " << getNextPhi(p) << " / "
-            << "centerPhi(" << p << ") = " << getCenterPhi(p) << " / " << std::endl;
-    }*/
+    std::stringstream ss;
+    ss << *this;
+    Console::print(OutLevel::TRACE, ss.str());
 }
 
 Discrete::Discrete(const MicrofacetDistribution* analyticNDF, int samples)
     : matchingNDF(analyticNDF)
 {
-    Console::out << Console::timeStamp << "Building Discrete NDF from distribution..." << std::endl;
+    Console::print(OutLevel::TRACE, "Building Discrete NDF from distribution...");
     m_type = NDFTypes::DISCRETE;
 
     size_t nPhi, nTheta;
@@ -421,7 +415,7 @@ Discrete::Discrete(const MicrofacetDistribution* analyticNDF, int samples)
             }
         }
         cdf_sum = std::get<2>(cdf[cdf.size() - 1]);
-        Console::light << Console::timePad << "Cdf sum = " << cdf_sum << std::endl;
+        Console::print(OutLevel::TRACE, Console::timePad + "Cdf sum = " + std::to_string(cdf_sum));
         if (cdf_sum != 1) {
             for (size_t i = 1; i < cdf.size(); ++i)
                 std::get<2>(cdf[i]) /= cdf_sum;
@@ -544,7 +538,7 @@ scal Discrete::GAFcorrelated(const vec3sc& wi, const vec3sc& wo, const vec3sc& w
     if (matchingNDF)
         return matchingNDF->GAFcorrelated(wi, wo, wh);
     else {
-        Console::err << "[Error] Discrete::GAFcorrelated not implemented." << std::endl;
+        Console::print(OutLevel::ERR, "Discrete::GAFcorrelated not implemented.");
         exit(EXIT_FAILURE);
     }
 }
@@ -618,7 +612,34 @@ vec3sc Discrete::sample(float u1, float u2, scal& _pdf, scal& _D) const
     return w;
 }
 
+void Discrete::toCSV(const std::string& output) const {
+    csv::CSVWriter* writer_distrib = new csv::CSVWriter(output);
 
+    scal thetaStep = (thetaEnd() - thetaStart()) / (scal)thetaSize();
+    scal phiStep   = (phiEnd()   - phiStart())   / (scal)phiSize();
+    
+    std::vector<csv::elem> thetas;
+    thetas.push_back({ csv::elem::Tag::STRING, "" });
+    for (int j = 0; j < thetaSize(); ++j) { thetas.push_back({ csv::elem::Tag::SCAL, thetaStart() + j * thetaStep }); }
+    writer_distrib->writeRow(thetas);
+
+    for (int i = 0; i < phiSize(); ++i) {
+        std::vector<csv::elem> vector_d;
+        vector_d.push_back({ csv::elem::Tag::SCAL, phiStart() + i * phiStep });
+
+        scal phi = phiStart() + (i + 0.5) * phiStep;
+
+        for (int j = 0; j < thetaSize(); ++j) {
+            scal theta = thetaStart() + (j + 0.5) * thetaStep;
+            vector_d.push_back({ csv::elem::Tag::SCAL, D(Conversion::polar_to_cartesian(theta, phi)) });
+        }
+
+        writer_distrib->writeRow(vector_d);
+    }
+
+    writer_distrib->close();
+    delete writer_distrib;
+}
 
 std::ostream& operator<<(std::ostream& output, const Discrete& ndf) {
     output << Console::timePad << "Discrete distribution: shape (nPhi, nTheta) = (" << ndf.phiSize() << ", " << ndf.thetaSize() << ")" << std::endl;

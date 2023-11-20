@@ -48,9 +48,7 @@ bool gnuplot_found() {
         return true;
     }
     else {
-        Console::err << Console::timePad << "Could not find gnuplot executable at "
-            << Path::gnuplotExe()
-            << ". Plots can't be created.";
+        Console::print(OutLevel::ERR, "Could not find gnuplot executable at " + Path::gnuplotExe() + ". Plots can't be created.");
         return false;
     }
 }
@@ -59,9 +57,7 @@ bool gnuplot_found() {
 
 void outputSuccess(const std::string& filename)
 {
-    Console::succ << Console::timePad
-        << "Plot rendered, and saved to " << filename << " ... done."
-        << std::endl;
+    Console::print(OutLevel::SUCCESS, "Plot rendered, and saved to " + filename  + " ... done.");
 }
 
 
